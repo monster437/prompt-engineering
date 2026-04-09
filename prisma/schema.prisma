@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ProviderConfig {
+  id           String   @id @default(cuid())
+  type         ConfigType
+  providerName String
+  baseUrl      String
+  apiKey       String
+  modelsJson   String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Workspace {
+  id                 String   @id @default(cuid())
+  title              String
+  mode               WorkspaceMode
+  outputLanguage     OutputLanguage
+  selectedTextModel  String?
+  selectedTextConfig String?
+  selectedTargetType String
+  selectedImageModel String?
+  sourcePrompt       String   @default("")
+  questionMessages   String   @default("[]")
+  answers            String   @default("[]")
+  finalPrompt        String?
+  parameterSummary   String?
+  refineInstruction  String?
+  status             WorkspaceStatus @default(IDLE)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+enum ConfigType {
+  TEXT
+  IMAGE
+}
+
+enum WorkspaceMode {
+  INTERVIEW
+  OPTIMIZE
+}
+
+enum OutputLanguage {
+  ZH
+  EN
+}
+
+enum WorkspaceStatus {
+  IDLE
+  ASKING
+  GENERATING
+  REFINING
+  ERROR
+}
