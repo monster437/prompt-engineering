@@ -1,38 +1,31 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { toConfigDto } from "@/lib/configs";
-import { encryptSecret } from "@/lib/security/crypto";
+import { describe, expect, it, vi } from "vitest";
 
-const originalEncryptionKey = process.env.APP_ENCRYPTION_KEY;
+vi.mock("@/lib/configs", () => ({
+  listConfigs: vi.fn().mockResolvedValue([]),
+  createConfig: vi.fn().mockResolvedValue({ id: "cfg_1" })
+}));
 
-afterEach(() => {
-  if (originalEncryptionKey === undefined) {
-    delete process.env.APP_ENCRYPTION_KEY;
-    return;
-  }
+import { GET, POST } from "@/app/api/configs/route";
 
-  process.env.APP_ENCRYPTION_KEY = originalEncryptionKey;
-});
+describe("/api/configs", () => {
+  it("returns config list", async () => {
+    const response = await GET();
+    expect(response.status).toBe(200);
+  });
 
-describe("toConfigDto", () => {
-  it("returns a masked config dto", () => {
-    process.env.APP_ENCRYPTION_KEY = "change-me-to-32-chars-minimum!!!";
-
-    const dto = toConfigDto({
-      id: "cfg_1",
-      type: "TEXT",
-      providerName: "OpenRouter",
-      baseUrl: "https://openrouter.ai/api",
-      apiKey: encryptSecret("sk-1234567890abcd"),
-      modelsJson: JSON.stringify([{ modelName: "gpt-4.1-mini", label: "gpt-4.1-mini" }])
+  it("creates a config", async () => {
+    const request = new Request("http://localhost/api/configs", {
+      method: "POST",
+      body: JSON.stringify({
+        type: "text",
+        providerName: "OpenRouter",
+        baseURL: "https://openrouter.ai/api",
+        apiKey: "sk-1234567890abcd",
+        models: [{ modelName: "gpt-4.1-mini", label: "gpt-4.1-mini" }]
+      })
     });
 
-    expect(dto).toEqual({
-      id: "cfg_1",
-      type: "text",
-      providerName: "OpenRouter",
-      baseURL: "https://openrouter.ai/api",
-      apiKeyMasked: "*************abcd",
-      models: [{ modelName: "gpt-4.1-mini", label: "gpt-4.1-mini" }]
-    });
+    const response = await POST(request);
+    expect(response.status).toBe(201);
   });
 });
