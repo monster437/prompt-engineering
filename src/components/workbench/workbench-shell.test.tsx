@@ -1,63 +1,61 @@
+import { OutputLanguage, WorkspaceMode, WorkspaceStatus } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 
-const {
-  createEmptyWorkspaceMock,
-  listWorkspacesMock,
-  updateWorkspaceMock
-} = vi.hoisted(() => ({
-  createEmptyWorkspaceMock: vi.fn((title: string) => ({
-    title,
-    mode: "optimize",
-    outputLanguage: "zh",
-    selectedTargetType: "general",
-    status: "idle"
-  })),
-  listWorkspacesMock: vi.fn().mockResolvedValue([
+const { findManyMock, updateMock } = vi.hoisted(() => ({
+  findManyMock: vi.fn().mockResolvedValue([
     {
       id: "ws_1",
       title: "工作台 1",
-      mode: "optimize",
-      outputLanguage: "zh",
+      mode: "OPTIMIZE",
+      outputLanguage: "ZH",
+      selectedTextModel: null,
+      selectedTextConfig: null,
       selectedTargetType: "general",
+      selectedImageModel: null,
       sourcePrompt: "",
-      questionMessages: [],
-      answers: [],
-      status: "idle"
+      questionMessages: "[]",
+      answers: "[]",
+      finalPrompt: null,
+      parameterSummary: null,
+      refineInstruction: null,
+      status: "IDLE",
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
   ]),
-  updateWorkspaceMock: vi.fn((payload: Record<string, unknown>) => ({
+  updateMock: vi.fn().mockResolvedValue({
     id: "ws_1",
     title: "工作台 1",
-    mode: payload.mode,
-    outputLanguage: payload.outputLanguage,
+    mode: "INTERVIEW",
+    outputLanguage: "EN",
+    selectedTextModel: null,
+    selectedTextConfig: null,
     selectedTargetType: "general",
+    selectedImageModel: null,
     sourcePrompt: "",
-    questionMessages: payload.questionMessages,
-    answers: payload.answers,
-    status: payload.status
-  }))
-}));
-
-vi.mock("@/lib/workspaces", () => ({
-  createEmptyWorkspace: createEmptyWorkspaceMock,
-  listWorkspaces: listWorkspacesMock,
-  toWorkspaceDto: (workspace: Record<string, unknown>) => workspace,
-  toWorkspaceUpdateData: (payload: Record<string, unknown>) => payload
+    questionMessages: JSON.stringify(["风格是什么？"]),
+    answers: JSON.stringify(["电影感"]),
+    finalPrompt: null,
+    parameterSummary: null,
+    refineInstruction: null,
+    status: "ASKING",
+    createdAt: new Date(),
+    updatedAt: new Date()
+  })
 }));
 
 vi.mock("@/lib/db", () => ({
   db: {
     workspace: {
-      update: vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) =>
-        Promise.resolve(updateWorkspaceMock(data))
-      )
+      findMany: findManyMock,
+      update: updateMock
     }
   }
 }));
 
 import { GET } from "@/app/api/workspaces/route";
 import { PATCH } from "@/app/api/workspaces/[id]/route";
-import { createEmptyWorkspace } from "@/lib/workspaces";
+import { createEmptyWorkspace, toWorkspaceUpdateData } from "@/lib/workspaces";
 
 describe("createEmptyWorkspace", () => {
   it("creates the default optimize workspace state", () => {
@@ -71,7 +69,25 @@ describe("createEmptyWorkspace", () => {
   });
 });
 
-describe("workspace api mapping", () => {
+describe("workspace mapping", () => {
+  it("maps app payload to prisma update data", () => {
+    expect(
+      toWorkspaceUpdateData({
+        mode: "interview",
+        outputLanguage: "en",
+        questionMessages: ["风格是什么？"],
+        answers: ["电影感"],
+        status: "asking"
+      })
+    ).toEqual({
+      mode: WorkspaceMode.INTERVIEW,
+      outputLanguage: OutputLanguage.EN,
+      questionMessages: JSON.stringify(["风格是什么？"]),
+      answers: JSON.stringify(["电影感"]),
+      status: WorkspaceStatus.ASKING
+    });
+  });
+
   it("returns workspace dto shape from GET", async () => {
     const response = await GET();
     const json = await response.json();
@@ -110,6 +126,16 @@ describe("workspace api mapping", () => {
       questionMessages: ["风格是什么？"],
       answers: ["电影感"],
       status: "asking"
+    });
+    expect(updateMock).toHaveBeenCalledWith({
+      where: { id: "ws_1" },
+      data: {
+        mode: WorkspaceMode.INTERVIEW,
+        outputLanguage: OutputLanguage.EN,
+        questionMessages: JSON.stringify(["风格是什么？"]),
+        answers: JSON.stringify(["电影感"]),
+        status: WorkspaceStatus.ASKING
+      }
     });
   });
 });
