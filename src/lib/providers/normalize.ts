@@ -9,7 +9,10 @@ export function normalizeProviderResponse(payload: Record<string, any>): Normali
     return parseResult(payload.choices[0].message.content);
   }
 
-  const outputText = payload.output?.[0]?.content?.find((item: any) => item.type === "output_text")?.text;
+  const outputText = payload.output
+    ?.filter((item: any) => item.type === "message")
+    .flatMap((item: any) => item.content ?? [])
+    .find((item: any) => item.type === "output_text")?.text;
   if (outputText) {
     return parseResult(outputText);
   }

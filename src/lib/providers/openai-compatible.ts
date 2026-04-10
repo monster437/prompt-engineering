@@ -8,7 +8,10 @@ export async function callOpenAiCompatibleProvider(input: ProviderInvocation) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${input.apiKey}`
     },
-    body: JSON.stringify(input.payload)
+    body: JSON.stringify({
+      ...input.payload,
+      model: input.model
+    })
   });
 
   if (!response.ok) {
