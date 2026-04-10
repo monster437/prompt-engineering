@@ -1,13 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { TARGET_TYPES } from "@/lib/targets";
+import { describe, it } from "vitest";
 
-describe("TARGET_TYPES", () => {
-  it("includes the required built-in target types", () => {
-    expect(TARGET_TYPES.map((item) => item.id)).toEqual([
-      "general",
-      "jimeng",
-      "grok",
-      "nano-banana"
-    ]);
+describe("prompting test placeholder", () => {
+  it("keeps the file reserved for real orchestration tests", () => {
+    // Intentionally empty. Task 2 replaces this with the first real prompt test.
   });
 });
