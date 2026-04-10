@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/configs", () => ({
   listConfigs: vi.fn().mockResolvedValue([]),
@@ -6,6 +6,12 @@ vi.mock("@/lib/configs", () => ({
 }));
 
 import { GET, POST } from "@/app/api/configs/route";
+
+const originalJson = Request.prototype.json;
+
+afterEach(() => {
+  Request.prototype.json = originalJson;
+});
 
 describe("/api/configs", () => {
   it("returns config list", async () => {
@@ -27,5 +33,13 @@ describe("/api/configs", () => {
 
     const response = await POST(request);
     expect(response.status).toBe(201);
+  });
+
+  it("returns 400 for malformed json", async () => {
+    const request = new Request("http://localhost/api/configs", { method: "POST" });
+    Request.prototype.json = vi.fn().mockRejectedValue(new Error("Invalid JSON"));
+
+    const response = await POST(request);
+    expect(response.status).toBe(400);
   });
 });

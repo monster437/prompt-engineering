@@ -8,7 +8,15 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const payload = configSchema.safeParse(await request.json());
+  let body: unknown;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Invalid config payload", 400);
+  }
+
+  const payload = configSchema.safeParse(body);
   if (!payload.success) {
     return jsonError("Invalid config payload", 400);
   }
