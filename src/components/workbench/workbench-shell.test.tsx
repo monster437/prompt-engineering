@@ -101,6 +101,51 @@ describe("workspace mapping", () => {
     });
   });
 
+  it("parses prompt summary json into an object in the workspace dto", async () => {
+    findManyMock.mockResolvedValueOnce([
+      {
+        id: "ws_2",
+        title: "工作台 2",
+        mode: "OPTIMIZE",
+        outputLanguage: "ZH",
+        selectedTextModel: null,
+        selectedTextConfig: null,
+        selectedTargetType: "general",
+        selectedImageModel: null,
+        sourcePrompt: "海边少女",
+        questionMessages: "[]",
+        answers: "[]",
+        finalPrompt: "prompt",
+        parameterSummary: JSON.stringify({
+          style: "cinematic",
+          scene: "beach",
+          time: "sunset",
+          mood: "calm",
+          quality: "high detail",
+          composition: "wide shot",
+          extras: []
+        }),
+        refineInstruction: null,
+        status: "IDLE",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]);
+
+    const response = await GET();
+    const json = await response.json();
+
+    expect(json[0].parameterSummary).toEqual({
+      style: "cinematic",
+      scene: "beach",
+      time: "sunset",
+      mood: "calm",
+      quality: "high detail",
+      composition: "wide shot",
+      extras: []
+    });
+  });
+
   it("returns patched workspace dto shape", async () => {
     const response = await PATCH(
       new Request("http://localhost/api/workspaces/ws_1", {
