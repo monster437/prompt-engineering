@@ -46,6 +46,25 @@ export function toWorkspaceDto(workspace: Workspace) {
   };
 }
 
+function isPromptSummary(value: unknown): value is PromptSummary {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const summary = value as Record<string, unknown>;
+
+  return (
+    typeof summary.style === "string" &&
+    typeof summary.scene === "string" &&
+    typeof summary.time === "string" &&
+    typeof summary.mood === "string" &&
+    typeof summary.quality === "string" &&
+    typeof summary.composition === "string" &&
+    Array.isArray(summary.extras) &&
+    summary.extras.every((extra) => typeof extra === "string")
+  );
+}
+
 export function toWorkspaceUpdateData(payload: Record<string, unknown>) {
   const data: Record<string, unknown> = {};
 
@@ -63,7 +82,7 @@ export function toWorkspaceUpdateData(payload: Record<string, unknown>) {
   if (Array.isArray(payload.answers)) data.answers = JSON.stringify(payload.answers);
   if (typeof payload.finalPrompt === "string" || payload.finalPrompt === null) data.finalPrompt = payload.finalPrompt;
   if (payload.parameterSummary === null) data.parameterSummary = null;
-  if (typeof payload.parameterSummary === "object" && payload.parameterSummary) data.parameterSummary = JSON.stringify(payload.parameterSummary);
+  if (isPromptSummary(payload.parameterSummary)) data.parameterSummary = JSON.stringify(payload.parameterSummary);
   if (typeof payload.refineInstruction === "string" || payload.refineInstruction === null) data.refineInstruction = payload.refineInstruction;
   if (payload.status === "idle") data.status = WorkspaceStatus.IDLE;
   if (payload.status === "asking") data.status = WorkspaceStatus.ASKING;
