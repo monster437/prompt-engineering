@@ -70,13 +70,22 @@ describe("createEmptyWorkspace", () => {
 });
 
 describe("workspace mapping", () => {
-  it("maps app payload to prisma update data", () => {
+  it("serializes a valid prompt summary in prisma update data", () => {
     expect(
       toWorkspaceUpdateData({
         mode: "interview",
         outputLanguage: "en",
         questionMessages: ["风格是什么？"],
         answers: ["电影感"],
+        parameterSummary: {
+          style: "cinematic",
+          scene: "beach",
+          time: "sunset",
+          mood: "calm",
+          quality: "high detail",
+          composition: "wide shot",
+          extras: ["golden light"]
+        },
         status: "asking"
       })
     ).toEqual({
@@ -84,6 +93,15 @@ describe("workspace mapping", () => {
       outputLanguage: OutputLanguage.EN,
       questionMessages: JSON.stringify(["风格是什么？"]),
       answers: JSON.stringify(["电影感"]),
+      parameterSummary: JSON.stringify({
+        style: "cinematic",
+        scene: "beach",
+        time: "sunset",
+        mood: "calm",
+        quality: "high detail",
+        composition: "wide shot",
+        extras: ["golden light"]
+      }),
       status: WorkspaceStatus.ASKING
     });
   });
@@ -98,6 +116,51 @@ describe("workspace mapping", () => {
       outputLanguage: "zh",
       questionMessages: [],
       answers: []
+    });
+  });
+
+  it("parses prompt summary json into an object in the workspace dto", async () => {
+    findManyMock.mockResolvedValueOnce([
+      {
+        id: "ws_2",
+        title: "工作台 2",
+        mode: "OPTIMIZE",
+        outputLanguage: "ZH",
+        selectedTextModel: null,
+        selectedTextConfig: null,
+        selectedTargetType: "general",
+        selectedImageModel: null,
+        sourcePrompt: "海边少女",
+        questionMessages: "[]",
+        answers: "[]",
+        finalPrompt: "prompt",
+        parameterSummary: JSON.stringify({
+          style: "cinematic",
+          scene: "beach",
+          time: "sunset",
+          mood: "calm",
+          quality: "high detail",
+          composition: "wide shot",
+          extras: []
+        }),
+        refineInstruction: null,
+        status: "IDLE",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]);
+
+    const response = await GET();
+    const json = await response.json();
+
+    expect(json[0].parameterSummary).toEqual({
+      style: "cinematic",
+      scene: "beach",
+      time: "sunset",
+      mood: "calm",
+      quality: "high detail",
+      composition: "wide shot",
+      extras: []
     });
   });
 
@@ -136,6 +199,33 @@ describe("workspace mapping", () => {
         answers: JSON.stringify(["电影感"]),
         status: WorkspaceStatus.ASKING
       }
+    });
+  });
+
+  it("does not serialize an invalid prompt summary in the PATCH update payload", async () => {
+    await PATCH(
+      new Request("http://localhost/api/workspaces/ws_1", {
+        method: "PATCH",
+        body: JSON.stringify({
+          parameterSummary: {
+            style: "cinematic",
+            scene: "beach",
+            time: "sunset",
+            mood: "calm",
+            quality: "high detail",
+            composition: "wide shot",
+            extras: "not-an-array"
+          }
+        })
+      }),
+      {
+        params: Promise.resolve({ id: "ws_1" })
+      }
+    );
+
+    expect(updateMock).toHaveBeenLastCalledWith({
+      where: { id: "ws_1" },
+      data: {}
     });
   });
 });
