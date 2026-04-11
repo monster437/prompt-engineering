@@ -52,6 +52,25 @@ function buildSystemPrompt(input: PromptOrchestratorInput) {
   });
 }
 
+function assertCompletedResult(
+  action: PromptOrchestratorInput["action"],
+  result: Awaited<ReturnType<typeof callOpenAiCompatibleProvider>>
+) {
+  if (result.status === "completed") {
+    return result;
+  }
+
+  if (action === "refine") {
+    throw new Error("Refine must return a completed result");
+  }
+
+  if (action === "optimize") {
+    throw new Error("Optimize must return a completed result");
+  }
+
+  throw new Error("Interview must return a completed result after the round limit");
+}
+
 export async function runPromptOrchestration(input: PromptOrchestratorInput) {
   const providerInput: ProviderInvocation = {
     ...input.provider,
@@ -65,9 +84,9 @@ export async function runPromptOrchestration(input: PromptOrchestratorInput) {
 
   const result = await callOpenAiCompatibleProvider(providerInput);
 
-  if (input.action === "refine" && result.status !== "completed") {
-    throw new Error("Refine must return a completed result");
+  if (input.action === "interview" && input.workspace.answers.length < MAX_INTERVIEW_ROUNDS) {
+    return result;
   }
 
-  return result;
+  return assertCompletedResult(input.action, result);
 }

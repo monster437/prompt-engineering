@@ -169,4 +169,41 @@ describe("runPromptOrchestration", () => {
       }))
     ).rejects.toThrow("Refine must return a completed result");
   });
+
+  it("throws if optimize returns a clarification response", async () => {
+    callProviderMock.mockResolvedValue({
+      status: "needs_clarification",
+      question: "补充一下风格",
+      contextSnapshot: {}
+    });
+
+    await expect(runPromptOrchestration(buildInput())).rejects.toThrow(
+      "Optimize must return a completed result"
+    );
+  });
+
+  it("throws if interview still returns clarification after the round limit", async () => {
+    callProviderMock.mockResolvedValue({
+      status: "needs_clarification",
+      question: "还想再确认一下光线",
+      contextSnapshot: {}
+    });
+
+    await expect(
+      runPromptOrchestration(buildInput({
+        action: "interview",
+        workspace: {
+          mode: "interview",
+          outputLanguage: "zh",
+          selectedTargetType: "general",
+          sourcePrompt: "一个女孩站在海边",
+          questionMessages: ["服装风格？", "时间？", "镜头感？"],
+          answers: ["白裙", "黄昏", "电影感"],
+          finalPrompt: null,
+          parameterSummary: null,
+          refineInstruction: null
+        }
+      }))
+    ).rejects.toThrow("Interview must return a completed result after the round limit");
+  });
 });
