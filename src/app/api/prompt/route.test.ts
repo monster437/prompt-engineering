@@ -43,9 +43,48 @@ describe("POST /api/prompt/generate", () => {
     expect(response.status).toBe(400);
     expect(runGeneratePromptMock).not.toHaveBeenCalled();
   });
+
+  it("returns the generated prompt result for a valid payload", async () => {
+    const request = new Request("http://localhost/api/prompt/generate", {
+      method: "POST",
+      body: JSON.stringify({
+        workspaceId: "ws_1",
+        selectedConfigId: "cfg_1",
+        selectedTextModel: "gpt-4.1",
+        sourcePrompt: "A rainy neon street"
+      })
+    });
+    const result = {
+      status: "completed",
+      finalPrompt: "Enhanced rainy neon street prompt",
+      contextSnapshot: { sourcePrompt: "A rainy neon street" }
+    };
+    runGeneratePromptMock.mockResolvedValue(result);
+
+    const response = await postGenerate(request);
+
+    expect(response.status).toBe(200);
+    expect(runGeneratePromptMock).toHaveBeenCalledWith({
+      workspaceId: "ws_1",
+      selectedConfigId: "cfg_1",
+      selectedTextModel: "gpt-4.1",
+      sourcePrompt: "A rainy neon street"
+    });
+    expect(await response.json()).toEqual(result);
+  });
 });
 
 describe("POST /api/prompt/refine", () => {
+  it("returns 400 for malformed json", async () => {
+    const request = new Request("http://localhost/api/prompt/refine", { method: "POST" });
+    Request.prototype.json = vi.fn().mockRejectedValue(new Error("Invalid JSON"));
+
+    const response = await postRefine(request);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "Invalid prompt payload" });
+  });
+
   it("returns 400 for invalid refine payload", async () => {
     const request = new Request("http://localhost/api/prompt/refine", {
       method: "POST",
@@ -56,5 +95,34 @@ describe("POST /api/prompt/refine", () => {
 
     expect(response.status).toBe(400);
     expect(runRefinePromptMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the refined prompt result for a valid payload", async () => {
+    const request = new Request("http://localhost/api/prompt/refine", {
+      method: "POST",
+      body: JSON.stringify({
+        workspaceId: "ws_1",
+        selectedConfigId: "cfg_1",
+        selectedTextModel: "gpt-4.1",
+        refineInstruction: "Make it moodier"
+      })
+    });
+    const result = {
+      status: "completed",
+      finalPrompt: "Moodier rainy neon street prompt",
+      contextSnapshot: { refineInstruction: "Make it moodier" }
+    };
+    runRefinePromptMock.mockResolvedValue(result);
+
+    const response = await postRefine(request);
+
+    expect(response.status).toBe(200);
+    expect(runRefinePromptMock).toHaveBeenCalledWith({
+      workspaceId: "ws_1",
+      selectedConfigId: "cfg_1",
+      selectedTextModel: "gpt-4.1",
+      refineInstruction: "Make it moodier"
+    });
+    expect(await response.json()).toEqual(result);
   });
 });
