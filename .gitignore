@@ -4,3 +4,6 @@ node_modules/
 .claude/
 
 .worktrees/
+prisma/dev.db
+记录.md
+docs/superpowers/plans/
