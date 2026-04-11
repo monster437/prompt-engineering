@@ -12,3 +12,17 @@ export const configSchema = z.object({
   apiKey: z.string().min(1),
   models: z.array(modelSchema).min(1)
 });
+
+export const generatePromptSchema = z.object({
+  workspaceId: z.string().min(1),
+  selectedConfigId: z.string().min(1),
+  selectedTextModel: z.string().min(1),
+  sourcePrompt: z.string().min(1)
+});
+
+export const refinePromptSchema = z.object({
+  workspaceId: z.string().min(1),
+  selectedConfigId: z.string().min(1),
+  selectedTextModel: z.string().min(1),
+  refineInstruction: z.string().min(1)
+});

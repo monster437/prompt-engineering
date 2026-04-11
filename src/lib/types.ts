@@ -35,3 +35,17 @@ export type PromptResult = {
   summary?: PromptSummary;
   contextSnapshot: Record<string, unknown>;
 };
+
+export type GeneratePromptRequest = {
+  workspaceId: string;
+  selectedConfigId: string;
+  selectedTextModel: string;
+  sourcePrompt: string;
+};
+
+export type RefinePromptRequest = {
+  workspaceId: string;
+  selectedConfigId: string;
+  selectedTextModel: string;
+  refineInstruction: string;
+};
