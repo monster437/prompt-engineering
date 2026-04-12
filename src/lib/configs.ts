@@ -2,7 +2,7 @@ import { ConfigType, ProviderConfig } from "@prisma/client";
 import { db } from "@/lib/db";
 import { decryptSecret, encryptSecret } from "@/lib/security/crypto";
 import { maskApiKey } from "@/lib/security/mask";
-import { ProviderConfigDto, ProviderModel } from "@/lib/types";
+import { ModelOptionDto, ProviderConfigDto, ProviderModel } from "@/lib/types";
 
 export function toConfigDto(config: Pick<ProviderConfig, "id" | "type" | "providerName" | "baseUrl" | "apiKey" | "modelsJson">): ProviderConfigDto {
   return {
@@ -18,6 +18,31 @@ export function toConfigDto(config: Pick<ProviderConfig, "id" | "type" | "provid
 export async function listConfigs() {
   const configs = await db.providerConfig.findMany({ orderBy: { createdAt: "asc" } });
   return configs.map(toConfigDto);
+}
+
+export async function listModelOptions(): Promise<ModelOptionDto[]> {
+  const configs = await db.providerConfig.findMany({
+    select: {
+      id: true,
+      type: true,
+      providerName: true,
+      modelsJson: true
+    },
+    orderBy: { createdAt: "asc" }
+  });
+
+  return configs.flatMap((config) => {
+    const models = JSON.parse(config.modelsJson) as ProviderModel[];
+
+    return models.map((model) => ({
+      configId: config.id,
+      configType: config.type === ConfigType.TEXT ? "text" : "image",
+      providerName: config.providerName,
+      modelName: model.modelName,
+      label: `${model.label} (${config.providerName})`,
+      providerId: model.providerId
+    }));
+  });
 }
 
 export async function createConfig(input: {

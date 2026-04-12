@@ -18,6 +18,19 @@ export type ProviderConfigDto = {
   models: ProviderModel[];
 };
 
+export type ModelOptionDto = {
+  configId: string;
+  configType: ConfigKind;
+  providerName: string;
+  modelName: string;
+  label: string;
+  providerId?: string;
+};
+
+export type ModelsResponseDto = {
+  items: ModelOptionDto[];
+};
+
 export type PromptSummary = {
   style: string;
   scene: string;
