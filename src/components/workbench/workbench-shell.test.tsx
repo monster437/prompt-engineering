@@ -1,6 +1,8 @@
 import { OutputLanguage, WorkspaceMode, WorkspaceStatus } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 
+import type { WorkspaceDto } from "@/lib/types";
+
 const { findManyMock, updateMock } = vi.hoisted(() => ({
   findManyMock: vi.fn().mockResolvedValue([
     {
@@ -108,7 +110,7 @@ describe("workspace mapping", () => {
 
   it("returns workspace dto shape from GET", async () => {
     const response = await GET();
-    const json = await response.json();
+    const json = (await response.json()) as WorkspaceDto[];
 
     expect(response.status).toBe(200);
     expect(json[0]).toMatchObject({
