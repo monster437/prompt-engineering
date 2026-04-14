@@ -2,7 +2,13 @@ import { ConfigType, ProviderConfig } from "@prisma/client";
 import { db } from "@/lib/db";
 import { decryptSecret, encryptSecret } from "@/lib/security/crypto";
 import { maskApiKey } from "@/lib/security/mask";
-import { ModelOptionDto, ProviderConfigDto, ProviderModel } from "@/lib/types";
+import type {
+  CreateProviderConfigRequest,
+  ModelOptionDto,
+  ProviderConfigDto,
+  ProviderModel,
+  UpdateProviderConfigRequest
+} from "@/lib/types";
 
 export function toConfigDto(config: Pick<ProviderConfig, "id" | "type" | "providerName" | "baseUrl" | "apiKey" | "modelsJson">): ProviderConfigDto {
   return {
@@ -45,13 +51,32 @@ export async function listModelOptions(): Promise<ModelOptionDto[]> {
   });
 }
 
-export async function createConfig(input: {
-  type: ConfigType;
-  providerName: string;
-  baseUrl: string;
-  apiKey: string;
-  models: ProviderModel[];
-}) {
+export async function updateConfig(id: string, input: UpdateProviderConfigRequest) {
+  const existing = await db.providerConfig.findUniqueOrThrow({ where: { id } });
+
+  const updated = await db.providerConfig.update({
+    where: { id },
+    data: {
+      type:
+        input.type === undefined
+          ? undefined
+          : input.type === "text"
+            ? ConfigType.TEXT
+            : ConfigType.IMAGE,
+      providerName: input.providerName,
+      baseUrl: input.baseURL,
+      apiKey: input.apiKey ? encryptSecret(input.apiKey) : undefined,
+      modelsJson: input.models ? JSON.stringify(input.models) : undefined
+    }
+  });
+
+  return toConfigDto({
+    ...updated,
+    apiKey: input.apiKey ? updated.apiKey : existing.apiKey
+  });
+}
+
+export async function createConfig(input: CreateProviderConfigRequest & { type: ConfigType; baseUrl: string }) {
   const created = await db.providerConfig.create({
     data: {
       type: input.type,

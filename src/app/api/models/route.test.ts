@@ -18,14 +18,14 @@ describe("GET /api/models", () => {
         configType: "text",
         providerName: "OpenRouter",
         modelName: "gpt-4.1-mini",
-        label: "gpt-4.1-mini (OpenRouter)"
+        label: "gpt-4.1-mini"
       },
       {
         configId: "cfg_image",
         configType: "image",
         providerName: "Replicate",
         modelName: "flux-dev",
-        label: "flux-dev (Replicate)",
+        label: "flux-dev",
         providerId: "black-forest-labs"
       }
     ]);
@@ -42,14 +42,14 @@ describe("GET /api/models", () => {
           configType: "text",
           providerName: "OpenRouter",
           modelName: "gpt-4.1-mini",
-          label: "gpt-4.1-mini (OpenRouter)"
+          label: "gpt-4.1-mini"
         },
         {
           configId: "cfg_image",
           configType: "image",
           providerName: "Replicate",
           modelName: "flux-dev",
-          label: "flux-dev (Replicate)",
+          label: "flux-dev",
           providerId: "black-forest-labs"
         }
       ]
@@ -63,7 +63,7 @@ describe("GET /api/models", () => {
         configType: "text",
         providerName: "OpenRouter",
         modelName: "gpt-4.1-mini",
-        label: "GPT-4.1 Mini (OpenRouter)",
+        label: "GPT-4.1 Mini",
         providerId: "openai"
       },
       {
@@ -71,7 +71,7 @@ describe("GET /api/models", () => {
         configType: "text",
         providerName: "OpenRouter",
         modelName: "claude-3.7-sonnet",
-        label: "Claude 3.7 Sonnet (OpenRouter)",
+        label: "Claude 3.7 Sonnet",
         providerId: "anthropic"
       }
     ]);
@@ -87,7 +87,7 @@ describe("GET /api/models", () => {
           configType: "text",
           providerName: "OpenRouter",
           modelName: "gpt-4.1-mini",
-          label: "GPT-4.1 Mini (OpenRouter)",
+          label: "GPT-4.1 Mini",
           providerId: "openai"
         },
         {
@@ -95,7 +95,7 @@ describe("GET /api/models", () => {
           configType: "text",
           providerName: "OpenRouter",
           modelName: "claude-3.7-sonnet",
-          label: "Claude 3.7 Sonnet (OpenRouter)",
+          label: "Claude 3.7 Sonnet",
           providerId: "anthropic"
         }
       ]
