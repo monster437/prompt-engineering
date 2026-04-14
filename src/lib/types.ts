@@ -9,6 +9,22 @@ export type ProviderModel = {
   providerId?: string;
 };
 
+export type CreateProviderConfigRequest = {
+  type: ConfigKind;
+  providerName: string;
+  baseURL: string;
+  apiKey: string;
+  models: ProviderModel[];
+};
+
+export type UpdateProviderConfigRequest = Partial<{
+  type: ConfigKind;
+  providerName: string;
+  baseURL: string;
+  apiKey: string;
+  models: ProviderModel[];
+}>;
+
 export type ProviderConfigDto = {
   id: string;
   type: ConfigKind;

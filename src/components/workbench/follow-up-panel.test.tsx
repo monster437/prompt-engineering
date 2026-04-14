@@ -41,7 +41,7 @@ describe("FollowUpPanel", () => {
 
     const output = JSON.stringify(html);
 
-    expect(output).toContain("Follow-up");
+    expect(output).toContain("追问区");
     expect(output).toContain("What style should it have?");
     expect(output).toContain("Cinematic");
     expect(output).toContain("What time of day?");
@@ -59,7 +59,7 @@ describe("FollowUpPanel", () => {
       onSubmitAnswer: vi.fn()
     });
 
-    expect(JSON.stringify(html)).toContain("No follow-up questions yet.");
+    expect(JSON.stringify(html)).toContain("暂时还没有追问。");
   });
 
   it("shows submit pending state", () => {
@@ -74,7 +74,7 @@ describe("FollowUpPanel", () => {
 
     const output = JSON.stringify(html);
 
-    expect(output).toContain("Submitting...");
+    expect(output).toContain("提交中...");
     expect(output).toContain("Cinematic");
   });
 

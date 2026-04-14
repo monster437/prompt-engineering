@@ -72,6 +72,24 @@ describe("POST /api/prompt/generate", () => {
     });
     expect(await response.json()).toEqual(result);
   });
+
+  it("returns 500 with the service error message when generation fails", async () => {
+    const request = new Request("http://localhost/api/prompt/generate", {
+      method: "POST",
+      body: JSON.stringify({
+        workspaceId: "ws_1",
+        selectedConfigId: "cfg_1",
+        selectedTextModel: "gpt-4.1",
+        sourcePrompt: "A rainy neon street"
+      })
+    });
+    runGeneratePromptMock.mockRejectedValue(new Error("Provider request failed with 401"));
+
+    const response = await postGenerate(request);
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Provider request failed with 401" });
+  });
 });
 
 describe("POST /api/prompt/refine", () => {
@@ -124,5 +142,23 @@ describe("POST /api/prompt/refine", () => {
       refineInstruction: "Make it moodier"
     });
     expect(await response.json()).toEqual(result);
+  });
+
+  it("returns 500 with the service error message when refine fails", async () => {
+    const request = new Request("http://localhost/api/prompt/refine", {
+      method: "POST",
+      body: JSON.stringify({
+        workspaceId: "ws_1",
+        selectedConfigId: "cfg_1",
+        selectedTextModel: "gpt-4.1",
+        refineInstruction: "Make it moodier"
+      })
+    });
+    runRefinePromptMock.mockRejectedValue(new Error("Refine orchestration must return a completed result"));
+
+    const response = await postRefine(request);
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Refine orchestration must return a completed result" });
   });
 });

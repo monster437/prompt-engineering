@@ -25,14 +25,14 @@ export function WorkspaceList({
   return (
     <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-slate-900">Workspaces</h2>
+        <h2 className="text-lg font-semibold text-slate-900">工作台列表</h2>
         <button
           type="button"
           onClick={onCreateWorkspace}
           disabled={isCreating}
           className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400"
         >
-          {isCreating ? "Creating..." : "New workspace"}
+          {isCreating ? "创建中..." : "新建工作台"}
         </button>
       </div>
 
@@ -51,7 +51,7 @@ export function WorkspaceList({
                 onClick={() => onSelectWorkspace(workspace.id)}
                 className="flex-1 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-900"
                 aria-pressed={isActive}
-                aria-label={isActive ? `${workspace.title} (current)` : workspace.title}
+                aria-label={isActive ? `${workspace.title}（当前）` : workspace.title}
               >
                 <span className="block">{workspace.title}</span>
                 <span className="block text-xs text-slate-500">
@@ -63,9 +63,9 @@ export function WorkspaceList({
                 onClick={() => onDeleteWorkspace(workspace.id)}
                 disabled={isDeleting}
                 className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400"
-                aria-label={isDeleting ? `Deleting ${workspace.title}` : `Delete ${workspace.title}`}
+                aria-label={isDeleting ? `正在删除 ${workspace.title}` : `删除 ${workspace.title}`}
               >
-                Delete
+                删除
               </button>
             </div>
           );
@@ -73,7 +73,7 @@ export function WorkspaceList({
 
         {workspaces.length === 0 ? (
           <p className="rounded-md border border-dashed border-slate-300 px-3 py-4 text-sm text-slate-500">
-            No workspaces yet.
+            还没有工作台。
           </p>
         ) : null}
       </div>

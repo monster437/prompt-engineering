@@ -44,6 +44,7 @@ export function WorkbenchPage() {
   const [isRefining, setIsRefining] = useState(false);
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     void Promise.all([listWorkspaces(), listModelOptions()]).then(([loadedWorkspaces, loadedModels]) => {
@@ -100,6 +101,7 @@ export function WorkbenchPage() {
 
   async function handlePatchWorkspace(patch: Partial<WorkspaceDto>) {
     if (!activeWorkspace) return;
+    setErrorMessage(null);
     setIsSaving(true);
     try {
       const next = { ...activeWorkspace, ...patch };
@@ -111,6 +113,7 @@ export function WorkbenchPage() {
 
   async function handleGeneratePrompt() {
     if (!activeWorkspace || !activeWorkspace.selectedTextConfig || !activeWorkspace.selectedTextModel) return;
+    setErrorMessage(null);
     setIsGenerating(true);
     try {
       const result = await generatePrompt({
@@ -120,6 +123,8 @@ export function WorkbenchPage() {
         sourcePrompt: activeWorkspace.sourcePrompt
       });
       await syncWorkspace(applyPromptResult(activeWorkspace, result));
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "生成失败，请稍后重试。");
     } finally {
       setIsGenerating(false);
     }
@@ -127,6 +132,7 @@ export function WorkbenchPage() {
 
   async function handleRefinePrompt() {
     if (!activeWorkspace || !activeWorkspace.selectedTextConfig || !activeWorkspace.selectedTextModel || !refineDraft.trim()) return;
+    setErrorMessage(null);
     setIsRefining(true);
     try {
       const result = await refinePrompt({
@@ -139,6 +145,8 @@ export function WorkbenchPage() {
         ...applyPromptResult(activeWorkspace, result),
         refineInstruction: refineDraft.trim()
       });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "优化失败，请稍后重试。");
     } finally {
       setIsRefining(false);
     }
@@ -174,6 +182,7 @@ export function WorkbenchPage() {
       pendingQuestion={pendingQuestion}
       draftAnswer={draftAnswer}
       refineDraft={refineDraft}
+      errorMessage={errorMessage}
       isCreating={isCreating}
       isDeletingWorkspaceId={isDeletingWorkspaceId}
       isSaving={isSaving}

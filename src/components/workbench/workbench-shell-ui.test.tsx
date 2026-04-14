@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import React from "react";
 
 import type { ModelOptionDto, PromptSummary, WorkspaceDto } from "@/lib/types";
 
@@ -65,6 +66,7 @@ describe("WorkbenchShell", () => {
       pendingQuestion: "What camera angle do you want?",
       draftAnswer: "",
       refineDraft: "",
+      errorMessage: null,
       isCreating: false,
       isDeletingWorkspaceId: null,
       isSaving: false,
@@ -89,11 +91,12 @@ describe("WorkbenchShell", () => {
     const layout = shellBody[1];
     const sidebar = layout.props.children[0];
     const content = layout.props.children[1];
+    const primaryColumnChildren = React.Children.toArray(content.props.children[0].props.children);
 
-    expect(JSON.stringify(header)).toContain("Image Prompt Workbench");
+    expect(header.props.children[0].props.children[0].props.children).toBe("提示词工作台");
     expect(sidebar.props.children.type.name).toBe("WorkspaceList");
-    expect(content.props.children[0].props.children[0].type.name).toBe("WorkspaceEditor");
-    expect(content.props.children[0].props.children[1].type.name).toBe("FollowUpPanel");
+    expect(primaryColumnChildren[0].type.name).toBe("WorkspaceEditor");
+    expect(primaryColumnChildren[1].type.name).toBe("FollowUpPanel");
     expect(content.props.children[1].type.name).toBe("PromptResultPanel");
   });
 
@@ -105,6 +108,7 @@ describe("WorkbenchShell", () => {
       pendingQuestion: null,
       draftAnswer: "",
       refineDraft: "",
+      errorMessage: null,
       isCreating: false,
       isDeletingWorkspaceId: null,
       isSaving: false,
@@ -124,7 +128,45 @@ describe("WorkbenchShell", () => {
       onCopyPrompt: vi.fn()
     });
 
-    expect(JSON.stringify(html)).toContain("Select or create a workspace to begin.");
+    const shellBody = html.props.children.props.children;
+    const emptyState = shellBody[1].props.children[1];
+
+    expect(emptyState.props.children).toBe("请选择一个工作台，或先创建一个新的工作台。");
+  });
+
+  it("renders an inline error banner when provided", () => {
+    const html = WorkbenchShell({
+      workspaces: [makeWorkspace()],
+      activeWorkspaceId: "ws_1",
+      modelOptions: [makeModel()],
+      pendingQuestion: null,
+      draftAnswer: "",
+      refineDraft: "",
+      errorMessage: "Provider request failed with 401",
+      isCreating: false,
+      isDeletingWorkspaceId: null,
+      isSaving: false,
+      isGenerating: false,
+      isRefining: false,
+      isSubmittingAnswer: false,
+      isCopying: false,
+      onCreateWorkspace: vi.fn(),
+      onDeleteWorkspace: vi.fn(),
+      onSelectWorkspace: vi.fn(),
+      onPatchWorkspace: vi.fn(),
+      onGeneratePrompt: vi.fn(),
+      onRefinePrompt: vi.fn(),
+      onDraftAnswerChange: vi.fn(),
+      onSubmitAnswer: vi.fn(),
+      onRefineDraftChange: vi.fn(),
+      onCopyPrompt: vi.fn()
+    });
+
+    const shellBody = html.props.children.props.children;
+    const content = shellBody[1].props.children[1];
+    const banner = content.props.children[0].props.children[1];
+
+    expect(banner.props.children).toBe("Provider request failed with 401");
   });
 
   it("passes handlers through the composed panels", () => {
@@ -141,6 +183,7 @@ describe("WorkbenchShell", () => {
       pendingQuestion: "What camera angle do you want?",
       draftAnswer: "",
       refineDraft: "",
+      errorMessage: null,
       isCreating: false,
       isDeletingWorkspaceId: null,
       isSaving: false,
@@ -164,16 +207,17 @@ describe("WorkbenchShell", () => {
     const layout = shellBody[1];
     const sidebar = layout.props.children[0];
     const content = layout.props.children[1];
+    const primaryColumnChildren = React.Children.toArray(content.props.children[0].props.children);
 
     const listElement = sidebar.props.children;
     listElement.props.onCreateWorkspace();
     listElement.props.onSelectWorkspace("ws_1");
 
-    const editorElement = content.props.children[0].props.children[0];
+    const editorElement = primaryColumnChildren[0];
     editorElement.props.onPatchWorkspace({ mode: "optimize" });
     editorElement.props.onGeneratePrompt();
 
-    const followUpElement = content.props.children[0].props.children[1];
+    const followUpElement = primaryColumnChildren[1];
     followUpElement.props.onSubmitAnswer();
 
     const resultElement = content.props.children[1];

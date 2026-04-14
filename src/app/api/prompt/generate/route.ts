@@ -16,6 +16,10 @@ export async function POST(request: Request) {
     return jsonError("Invalid prompt payload", 400);
   }
 
-  const result = await runGeneratePrompt(payload.data);
-  return Response.json(result);
+  try {
+    const result = await runGeneratePrompt(payload.data);
+    return Response.json(result);
+  } catch (error) {
+    return jsonError(error instanceof Error ? error.message : "Prompt generation failed", 500);
+  }
 }

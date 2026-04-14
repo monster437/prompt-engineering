@@ -1,15 +1,17 @@
 import { Prisma } from "@prisma/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { listConfigsMock, createConfigMock, deleteConfigMock } = vi.hoisted(() => ({
+const { listConfigsMock, createConfigMock, updateConfigMock, deleteConfigMock } = vi.hoisted(() => ({
   listConfigsMock: vi.fn().mockResolvedValue([]),
   createConfigMock: vi.fn().mockResolvedValue({ id: "cfg_1" }),
+  updateConfigMock: vi.fn().mockResolvedValue({ id: "cfg_1", providerName: "OpenAI" }),
   deleteConfigMock: vi.fn()
 }));
 
 vi.mock("@/lib/configs", () => ({
   listConfigs: listConfigsMock,
-  createConfig: createConfigMock
+  createConfig: createConfigMock,
+  updateConfig: updateConfigMock
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -21,7 +23,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { GET, POST } from "@/app/api/configs/route";
-import { DELETE } from "@/app/api/configs/[id]/route";
+import { DELETE, PATCH } from "@/app/api/configs/[id]/route";
 
 const originalJson = Request.prototype.json;
 
@@ -29,6 +31,7 @@ afterEach(() => {
   Request.prototype.json = originalJson;
   listConfigsMock.mockClear();
   createConfigMock.mockClear();
+  updateConfigMock.mockClear();
   deleteConfigMock.mockReset();
 });
 
@@ -66,6 +69,39 @@ describe("/api/configs", () => {
     Request.prototype.json = vi.fn().mockRejectedValue(new Error("Invalid JSON"));
 
     const response = await POST(request);
+    expect(response.status).toBe(400);
+  });
+});
+
+describe("PATCH /api/configs/[id]", () => {
+  it("updates a config", async () => {
+    const response = await PATCH(new Request("http://localhost/api/configs/cfg_1", {
+      method: "PATCH",
+      body: JSON.stringify({
+        providerName: "OpenAI",
+        apiKey: "sk-new-secret",
+        models: [{ modelName: "gpt-4.1", label: "gpt-4.1", providerId: "openai" }]
+      })
+    }), {
+      params: Promise.resolve({ id: "cfg_1" })
+    });
+
+    expect(response.status).toBe(200);
+    expect(updateConfigMock).toHaveBeenCalledWith("cfg_1", {
+      providerName: "OpenAI",
+      apiKey: "sk-new-secret",
+      models: [{ modelName: "gpt-4.1", label: "gpt-4.1", providerId: "openai" }]
+    });
+  });
+
+  it("returns 400 for invalid patch payload", async () => {
+    const response = await PATCH(new Request("http://localhost/api/configs/cfg_1", {
+      method: "PATCH",
+      body: JSON.stringify({ providerName: "" })
+    }), {
+      params: Promise.resolve({ id: "cfg_1" })
+    });
+
     expect(response.status).toBe(400);
   });
 });

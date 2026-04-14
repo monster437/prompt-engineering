@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import React from "react";
-import type { ModelOptionDto, WorkspaceDto, WorkspaceMode, OutputLanguage } from "@/lib/types";
+import type { ModelOptionDto, OutputLanguage, WorkspaceDto, WorkspaceMode } from "@/lib/types";
 
 type WorkspaceEditorProps = {
   workspace: WorkspaceDto;
@@ -29,17 +30,28 @@ export function WorkspaceEditor({
 }: WorkspaceEditorProps) {
   const textModels = modelOptions.filter((option) => option.configType === "text");
   const imageModels = modelOptions.filter((option) => option.configType === "image");
+  const hasModelOptions = modelOptions.length > 0;
 
   return (
     <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-slate-900">Workspace editor</h2>
-        <span className="text-xs text-slate-500">{isSaving ? "Saving..." : "Ready"}</span>
+        <h2 className="text-lg font-semibold text-slate-900">工作台编辑区</h2>
+        <span className="text-xs text-slate-500">{isSaving ? "保存中..." : "就绪"}</span>
       </div>
+
+      {!hasModelOptions ? (
+        <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+          暂无可用模型配置，请先前往
+          <Link href="/configs" className="mx-1 font-medium text-slate-900 underline">
+            配置管理页
+          </Link>
+          添加文本模型或图像模型。
+        </div>
+      ) : null}
 
       <div className="space-y-4">
         <label className="block space-y-1 text-sm text-slate-700">
-          <span className="font-medium">Mode</span>
+          <span className="font-medium">模式</span>
           <select
             value={workspace.mode}
             onChange={(event) => onPatchWorkspace({ mode: event.target.value as WorkspaceMode })}
@@ -54,7 +66,7 @@ export function WorkspaceEditor({
         </label>
 
         <label className="block space-y-1 text-sm text-slate-700">
-          <span className="font-medium">Output language</span>
+          <span className="font-medium">输出语言</span>
           <select
             value={workspace.outputLanguage}
             onChange={(event) => onPatchWorkspace({ outputLanguage: event.target.value as OutputLanguage })}
@@ -69,7 +81,7 @@ export function WorkspaceEditor({
         </label>
 
         <label className="block space-y-1 text-sm text-slate-700">
-          <span className="font-medium">Target type</span>
+          <span className="font-medium">目标类型</span>
           <input
             type="text"
             value={workspace.selectedTargetType}
@@ -79,7 +91,7 @@ export function WorkspaceEditor({
         </label>
 
         <label className="block space-y-1 text-sm text-slate-700">
-          <span className="font-medium">Text model</span>
+          <span className="font-medium">文本模型</span>
           <select
             value={workspace.selectedTextConfig ?? ""}
             onChange={(event) => {
@@ -91,7 +103,7 @@ export function WorkspaceEditor({
             }}
             className="w-full rounded-md border border-slate-300 px-3 py-2"
           >
-            <option value="">Select a text model</option>
+            <option value="">请选择文本模型</option>
             {textModels.map((option) => (
               <option key={`${option.configId}:${option.modelName}`} value={option.configId}>
                 {option.label}
@@ -101,13 +113,13 @@ export function WorkspaceEditor({
         </label>
 
         <label className="block space-y-1 text-sm text-slate-700">
-          <span className="font-medium">Image model</span>
+          <span className="font-medium">图像模型</span>
           <select
             value={workspace.selectedImageModel ?? ""}
             onChange={(event) => onPatchWorkspace({ selectedImageModel: event.target.value || null })}
             className="w-full rounded-md border border-slate-300 px-3 py-2"
           >
-            <option value="">Select an image model</option>
+            <option value="">请选择图像模型</option>
             {imageModels.map((option) => (
               <option key={`${option.configId}:${option.modelName}`} value={option.modelName}>
                 {option.label}
@@ -117,7 +129,7 @@ export function WorkspaceEditor({
         </label>
 
         <label className="block space-y-1 text-sm text-slate-700">
-          <span className="font-medium">Source prompt</span>
+          <span className="font-medium">原始提示词</span>
           <textarea
             value={workspace.sourcePrompt}
             onChange={(event) => onPatchWorkspace({ sourcePrompt: event.target.value })}
@@ -132,7 +144,7 @@ export function WorkspaceEditor({
             disabled={isGenerating}
             className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400"
           >
-            {isGenerating ? "Generating..." : "Generate prompt"}
+            {isGenerating ? "生成中..." : "生成提示词"}
           </button>
           <button
             type="button"
@@ -140,7 +152,7 @@ export function WorkspaceEditor({
             disabled={isRefining}
             className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400"
           >
-            {isRefining ? "Refining..." : "Refine prompt"}
+            {isRefining ? "优化中..." : "优化提示词"}
           </button>
         </div>
       </div>

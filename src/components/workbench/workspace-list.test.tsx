@@ -42,7 +42,7 @@ describe("WorkspaceList", () => {
 
     expect(JSON.stringify(html)).toContain("Workspace 1");
     expect(JSON.stringify(html)).toContain("Workspace 2");
-    expect(JSON.stringify(html)).toContain("Workspace 2 (current)");
+    expect(JSON.stringify(html)).toContain("Workspace 2（当前）");
     expect(JSON.stringify(html)).toContain("asking");
   });
 
@@ -61,7 +61,7 @@ describe("WorkspaceList", () => {
     const createButton = (html.props.children[0].props.children[1]);
     createButton.props.onClick();
 
-    expect(createButton.props.children).toBe("New workspace");
+    expect(createButton.props.children).toBe("新建工作台");
     expect(onCreateWorkspace).toHaveBeenCalledTimes(1);
   });
 
@@ -79,7 +79,7 @@ describe("WorkspaceList", () => {
     const createButton = html.props.children[0].props.children[1];
 
     expect(createButton.props.disabled).toBe(true);
-    expect(createButton.props.children).toBe("Creating...");
+    expect(createButton.props.children).toBe("创建中...");
   });
 
   it("wires row selection and deletion handlers with workspace ids", () => {
@@ -97,7 +97,7 @@ describe("WorkspaceList", () => {
 
     const output = JSON.stringify(html);
 
-    expect(output).toContain("Delete Workspace 9");
+    expect(output).toContain("删除 Workspace 9");
     expect(output).toContain("Workspace 9");
   });
 
@@ -117,7 +117,7 @@ describe("WorkspaceList", () => {
 
     const output = JSON.stringify(html);
 
-    expect(output).toContain("Deleting Workspace 2");
-    expect(output).toContain("Delete Workspace 1");
+    expect(output).toContain("正在删除 Workspace 2");
+    expect(output).toContain("删除 Workspace 1");
   });
 });
