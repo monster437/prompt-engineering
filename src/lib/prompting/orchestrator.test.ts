@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MAX_INTERVIEW_ROUNDS, PromptOrchestratorInput } from "@/lib/prompting/contracts";
+import { MAX_INTERVIEW_ROUNDS, PromptOrchestratorInput, ProviderMessage } from "@/lib/prompting/contracts";
 
 const { callProviderMock } = vi.hoisted(() => ({
   callProviderMock: vi.fn()
@@ -18,7 +18,9 @@ function buildInput(overrides: Partial<PromptOrchestratorInput> = {}): PromptOrc
       mode: "optimize",
       outputLanguage: "zh",
       selectedTargetType: "general",
+      selectedImageAspectRatio: "auto",
       sourcePrompt: "一个女孩站在海边",
+      sourcePromptImages: [],
       questionMessages: [],
       answers: [],
       finalPrompt: null,
@@ -43,6 +45,55 @@ describe("runPromptOrchestration", () => {
   it("runs optimize through the provider and returns the normalized result", async () => {
     callProviderMock.mockResolvedValue({
       status: "completed",
+      finalPrompt: "optimized prompt with 2:5 framing",
+      summary: {
+        style: "cinematic",
+        scene: "beach",
+        time: "sunset",
+        mood: "calm",
+        quality: "high detail",
+        composition: "2:5 wide shot",
+        extras: []
+      },
+      contextSnapshot: { subject: "girl" }
+    });
+
+    const result = await runPromptOrchestration(buildInput({
+      workspace: {
+        mode: "optimize",
+        outputLanguage: "zh",
+        selectedTargetType: '{"styleTags":["xianxia"],"cameraOrientation":"back"}',
+        selectedImageAspectRatio: "16:9",
+        sourcePrompt: "一个女孩站在海边",
+        sourcePromptImages: [],
+        questionMessages: [],
+        answers: [],
+        finalPrompt: null,
+        parameterSummary: null,
+        refineInstruction: null
+      }
+    }));
+
+    expect(result.finalPrompt).toBe("optimized prompt with 16:9 framing");
+    expect(result.summary?.composition).toBe("16:9 wide shot");
+    expect(callProviderMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "gpt-4.1-mini",
+        endpoint: "/v1/chat/completions",
+        payload: expect.objectContaining({
+          messages: expect.arrayContaining([
+            expect.objectContaining({ role: "system", content: expect.stringContaining("16:9") }),
+            expect.objectContaining({ role: "user", content: expect.stringContaining("Selected aspect ratio:\n16:9") }),
+            expect.objectContaining({ role: "user", content: expect.stringContaining("Selected camera orientation:\n背影") })
+          ])
+        })
+      })
+    );
+  });
+
+  it("includes uploaded reference images in the user message content", async () => {
+    callProviderMock.mockResolvedValue({
+      status: "completed",
       finalPrompt: "optimized prompt",
       summary: {
         style: "cinematic",
@@ -56,21 +107,47 @@ describe("runPromptOrchestration", () => {
       contextSnapshot: { subject: "girl" }
     });
 
-    const result = await runPromptOrchestration(buildInput());
+    await runPromptOrchestration(buildInput({
+      workspace: {
+        mode: "optimize",
+        outputLanguage: "zh",
+        selectedTargetType: "general",
+        selectedImageAspectRatio: "auto",
+        sourcePrompt: "",
+        sourcePromptImages: [
+          {
+            id: "img_1",
+            name: "ref.png",
+            mimeType: "image/png",
+            dataUrl: "data:image/png;base64,AAAA",
+            sizeBytes: 128
+          }
+        ],
+        questionMessages: [],
+        answers: [],
+        finalPrompt: null,
+        parameterSummary: null,
+        refineInstruction: null
+      }
+    }));
 
-    expect(result.finalPrompt).toBe("optimized prompt");
-    expect(callProviderMock).toHaveBeenCalledWith(
+    const providerInput = callProviderMock.mock.calls[0][0];
+    const messages = (providerInput.payload as { messages: ProviderMessage[] }).messages;
+    const userMessage = messages[1];
+
+    expect(Array.isArray(userMessage.content)).toBe(true);
+    expect(userMessage.content).toEqual([
       expect.objectContaining({
-        model: "gpt-4.1-mini",
-        endpoint: "/v1/chat/completions",
-        payload: expect.objectContaining({
-          messages: expect.arrayContaining([
-            expect.objectContaining({ role: "system" }),
-            expect.objectContaining({ role: "user" })
-          ])
+        type: "text",
+        text: expect.stringContaining("Reference images attached:\n1")
+      }),
+      expect.objectContaining({
+        type: "image_url",
+        image_url: expect.objectContaining({
+          url: "data:image/png;base64,AAAA"
         })
       })
-    );
+    ]);
   });
 
   it("allows interview clarification before the round limit", async () => {
@@ -86,7 +163,9 @@ describe("runPromptOrchestration", () => {
         mode: "interview",
         outputLanguage: "zh",
         selectedTargetType: "general",
+        selectedImageAspectRatio: "auto",
         sourcePrompt: "一个女孩站在海边",
+        sourcePromptImages: [],
         questionMessages: [],
         answers: [],
         finalPrompt: null,
@@ -121,7 +200,9 @@ describe("runPromptOrchestration", () => {
         mode: "interview",
         outputLanguage: "zh",
         selectedTargetType: "general",
+        selectedImageAspectRatio: "auto",
         sourcePrompt: "一个女孩站在海边",
+        sourcePromptImages: [],
         questionMessages: ["服装风格？", "时间？", "镜头感？"],
         answers: ["白裙", "黄昏", "电影感"],
         finalPrompt: null,
@@ -131,10 +212,10 @@ describe("runPromptOrchestration", () => {
     }));
 
     const providerInput = callProviderMock.mock.calls[0][0];
-    const systemMessage = (providerInput.payload as { messages: Array<{ role: string; content: string }> }).messages[0];
+    const systemMessage = (providerInput.payload as { messages: ProviderMessage[] }).messages[0];
 
     expect(MAX_INTERVIEW_ROUNDS).toBe(3);
-    expect(systemMessage.content).toContain("Do not ask another question");
+    expect(typeof systemMessage.content === "string" ? systemMessage.content : "").toContain("Do not ask another question");
   });
 
   it("throws if refine returns a clarification response", async () => {
@@ -151,7 +232,9 @@ describe("runPromptOrchestration", () => {
           mode: "optimize",
           outputLanguage: "zh",
           selectedTargetType: "general",
+          selectedImageAspectRatio: "16:9",
           sourcePrompt: "一个女孩站在海边",
+          sourcePromptImages: [],
           questionMessages: [],
           answers: [],
           finalPrompt: "old prompt",
@@ -196,7 +279,9 @@ describe("runPromptOrchestration", () => {
           mode: "interview",
           outputLanguage: "zh",
           selectedTargetType: "general",
+          selectedImageAspectRatio: "auto",
           sourcePrompt: "一个女孩站在海边",
+          sourcePromptImages: [],
           questionMessages: ["服装风格？", "时间？", "镜头感？"],
           answers: ["白裙", "黄昏", "电影感"],
           finalPrompt: null,

@@ -1,22 +1,52 @@
-import { OutputLanguage } from "@/lib/types";
+import { ImageAspectRatio, OutputLanguage } from "@/lib/types";
+import {
+  formatSelectedStyleLabels,
+  formatSelectedStylePromptHints,
+  getResolvedCameraOrientationLabel,
+  getResolvedCameraOrientationPromptHint
+} from "@/lib/style-tags";
 
 type PromptTemplateInput = {
   outputLanguage: OutputLanguage;
   targetType: string;
+  aspectRatio: ImageAspectRatio;
 };
 
 type InterviewPromptTemplateInput = PromptTemplateInput & {
   canAskFollowUp: boolean;
 };
 
+type ReversePromptTemplateInput = {
+  outputLanguage: OutputLanguage;
+};
+
 function describeLanguage(outputLanguage: OutputLanguage) {
   return outputLanguage === "zh" ? "中文" : "English";
 }
 
-function buildSharedContractInstructions({ outputLanguage, targetType }: PromptTemplateInput) {
+function buildAspectRatioInstructions(aspectRatio: ImageAspectRatio) {
+  if (aspectRatio === "auto") {
+    return "If the user did not specify an aspect ratio, avoid inventing a conflicting hard-coded ratio in finalPrompt or summary.composition.";
+  }
+
   return [
-    `Write the final prompt for the ${targetType} target type.`,
+    `The required image aspect ratio is ${aspectRatio}.`,
+    `The finalPrompt and summary.composition must match ${aspectRatio}.`,
+    `Do not mention any conflicting aspect ratio such as 2:5, 9:16, 16:9, 4:3, 3:4, 3:2, or 2:3 unless it is exactly ${aspectRatio}.`
+  ].join("\n");
+}
+
+function buildSharedContractInstructions({ outputLanguage, targetType, aspectRatio }: PromptTemplateInput) {
+  const selectedStyleLabels = formatSelectedStyleLabels(targetType);
+  const selectedStyleHints = formatSelectedStylePromptHints(targetType);
+
+  return [
+    `Write the final prompt for the selected style tags: ${selectedStyleLabels}.`,
+    `Treat the style tags as a combined aesthetic brief: ${selectedStyleHints}.`,
+    `Selected camera orientation: ${getResolvedCameraOrientationLabel(targetType)}.`,
+    `Camera orientation guidance: ${getResolvedCameraOrientationPromptHint(targetType)}.`,
     `Use ${describeLanguage(outputLanguage)} for all user-visible fields.`,
+    buildAspectRatioInstructions(aspectRatio),
     "Return JSON only.",
     'The JSON must match {"status":"needs_clarification"|"completed","question"?:string,"finalPrompt"?:string,"summary"?:{"style":string,"scene":string,"time":string,"mood":string,"quality":string,"composition":string,"extras":string[]},"contextSnapshot":Record<string,unknown>}.',
     "Always include summary and contextSnapshot when status is completed."
@@ -50,5 +80,27 @@ export function buildRefineSystemPrompt(input: PromptTemplateInput) {
     buildSharedContractInstructions(input),
     "Status must be completed.",
     "Update the finalPrompt and summary to reflect the refine instruction."
+  ].join("\n\n");
+}
+
+export function buildReversePromptSystemPrompt(input: ReversePromptTemplateInput) {
+  return [
+    "You infer likely image-generation prompts from one or more reference images.",
+    `Use ${describeLanguage(input.outputLanguage)} for all user-visible fields.`,
+    "Focus only on what is visually supported by the images and any explicit extra user instruction.",
+    "If multiple images are provided, merge their shared traits into one coherent prompt unless the user explicitly asks for separation.",
+    "Do not mention that the prompt is inferred, guessed, reverse-engineered, or based on attached images.",
+    "Write a production-ready finalPrompt that another image model can directly use.",
+    "summary.style should describe the visual style or rendering style.",
+    "summary.scene should describe the main subject and scene setting.",
+    "summary.time should describe time of day or the dominant lighting period.",
+    "summary.mood should describe atmosphere and emotion.",
+    "summary.quality should describe detail level, rendering fidelity, texture, or finish.",
+    "summary.composition should describe framing, viewpoint, lens feel, and composition.",
+    "summary.extras should capture notable props, costume details, materials, color palette, effects, or secondary cues.",
+    "Return JSON only.",
+    'The JSON must match {"status":"completed","finalPrompt":string,"summary":{"style":string,"scene":string,"time":string,"mood":string,"quality":string,"composition":string,"extras":string[]},"contextSnapshot":Record<string,unknown>}.',
+    "Status must always be completed.",
+    "Always include contextSnapshot with concise structured evidence such as imageCount, observedSubjects, palette, lighting, or camera hints."
   ].join("\n\n");
 }

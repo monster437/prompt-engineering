@@ -45,13 +45,17 @@ function createWorkspaceRecord(overrides: Record<string, unknown> = {}) {
     selectedTextModel: null,
     selectedTextConfig: null,
     selectedTargetType: "general",
+    selectedImageConfig: null,
+    selectedImageAspectRatio: "auto",
     selectedImageModel: null,
     sourcePrompt: "旧提示词",
+    sourcePromptImages: "[]",
     questionMessages: "[]",
     answers: "[]",
     finalPrompt: null,
     parameterSummary: null,
     refineInstruction: null,
+    generatedImageResult: null,
     status: "IDLE",
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -94,17 +98,31 @@ describe("runGeneratePrompt", () => {
       contextSnapshot: { subject: "girl" }
     });
     updateWorkspaceMock.mockResolvedValue(createWorkspaceRecord());
+    const sourcePromptImages = [
+      {
+        id: "img_1",
+        name: "ref.png",
+        mimeType: "image/png",
+        dataUrl: "data:image/png;base64,AAAA",
+        sizeBytes: 128
+      }
+    ];
 
     const result = await runGeneratePrompt({
       workspaceId: "ws_1",
       selectedConfigId: "cfg_text",
       selectedTextModel: "gpt-4.1-mini",
-      sourcePrompt: "一个女孩站在海边"
+      sourcePrompt: "一个女孩站在海边",
+      sourcePromptImages
     });
 
     expect(runPromptOrchestrationMock).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "optimize",
+        workspace: expect.objectContaining({
+          selectedImageAspectRatio: "auto",
+          sourcePromptImages
+        }),
         provider: expect.objectContaining({
           baseURL: "https://example.com",
           apiKey: "sk-test",
@@ -117,7 +135,9 @@ describe("runGeneratePrompt", () => {
         where: { id: "ws_1" },
         data: expect.objectContaining({
           sourcePrompt: "一个女孩站在海边",
+          sourcePromptImages: JSON.stringify(sourcePromptImages),
           finalPrompt: "新的提示词",
+          generatedImageResult: null,
           status: "IDLE"
         })
       })
@@ -147,13 +167,15 @@ describe("runGeneratePrompt", () => {
       workspaceId: "ws_1",
       selectedConfigId: "cfg_text",
       selectedTextModel: "gpt-4.1-mini",
-      sourcePrompt: "一个女孩站在海边"
+      sourcePrompt: "一个女孩站在海边",
+      sourcePromptImages: []
     });
 
     expect(updateWorkspaceMock).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           questionMessages: JSON.stringify(["主角穿什么风格的衣服？"]),
+          generatedImageResult: null,
           status: "ASKING"
         })
       })
@@ -190,13 +212,15 @@ describe("runGeneratePrompt", () => {
       workspaceId: "ws_1",
       selectedConfigId: "cfg_text",
       selectedTextModel: "gpt-4.1-mini",
-      sourcePrompt: "一个女孩站在海边"
+      sourcePrompt: "一个女孩站在海边",
+      sourcePromptImages: []
     });
 
     expect(updateWorkspaceMock).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           questionMessages: JSON.stringify(["你想要什么画风？", "主角穿什么风格的衣服？"]),
+          generatedImageResult: null,
           status: "ASKING"
         })
       })
@@ -225,7 +249,8 @@ describe("runGeneratePrompt", () => {
         workspaceId: "ws_1",
         selectedConfigId: "cfg_text",
         selectedTextModel: "gpt-4.1-mini",
-        sourcePrompt: "一个女孩站在海边"
+        sourcePrompt: "一个女孩站在海边",
+        sourcePromptImages: []
       })
     ).rejects.toThrow(/interview.*question/i);
 
@@ -248,7 +273,8 @@ describe("runGeneratePrompt", () => {
         workspaceId: "ws_1",
         selectedConfigId: "cfg_image",
         selectedTextModel: "gpt-4.1-mini",
-        sourcePrompt: "一个女孩站在海边"
+        sourcePrompt: "一个女孩站在海边",
+        sourcePromptImages: []
       })
     ).rejects.toThrow(/text config/i);
 
@@ -278,7 +304,8 @@ describe("runGeneratePrompt", () => {
         workspaceId: "ws_1",
         selectedConfigId: "cfg_text",
         selectedTextModel: "gpt-4.1-mini",
-        sourcePrompt: "一个女孩站在海边"
+        sourcePrompt: "一个女孩站在海边",
+        sourcePromptImages: []
       })
     ).rejects.toThrow(/optimize/i);
 
@@ -291,6 +318,15 @@ describe("runRefinePrompt", () => {
     findWorkspaceMock.mockResolvedValue(
       createWorkspaceRecord({
         finalPrompt: "旧提示词",
+        sourcePromptImages: JSON.stringify([
+          {
+            id: "img_1",
+            name: "ref.png",
+            mimeType: "image/png",
+            dataUrl: "data:image/png;base64,AAAA",
+            sizeBytes: 128
+          }
+        ]),
         parameterSummary: JSON.stringify({
           style: "cinematic",
           scene: "beach",
@@ -335,13 +371,20 @@ describe("runRefinePrompt", () => {
     });
 
     expect(runPromptOrchestrationMock).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "refine" })
+      expect.objectContaining({
+        action: "refine",
+        workspace: expect.objectContaining({
+          selectedImageAspectRatio: "auto",
+          sourcePromptImages: [expect.objectContaining({ name: "ref.png" })]
+        })
+      })
     );
     expect(updateWorkspaceMock).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           refineInstruction: "改成雨夜",
           finalPrompt: "雨夜版本提示词",
+          generatedImageResult: null,
           status: "IDLE"
         })
       })

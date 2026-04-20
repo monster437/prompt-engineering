@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "clean:next": "node scripts/dev-clean.mjs --clean-only",
+    "dev:clean": "node scripts/dev-clean.mjs",
+    "dev:reset": "node scripts/dev-clean.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

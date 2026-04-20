@@ -285,6 +285,71 @@ describe("callOpenAiCompatibleProvider", () => {
     );
   });
 
+  it("maps multimodal chat messages to structured responses input items", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          object: "chat.completion",
+          choices: [{ message: { content: null } }]
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          output: [{ type: "message", content: [{ type: "output_text", text: '{"status":"completed","finalPrompt":"from-multimodal","contextSnapshot":{}}' }] }]
+        })
+      });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await callOpenAiCompatibleProvider({
+      endpoint: "/v1/chat/completions",
+      baseURL: "https://example.com",
+      apiKey: "sk-test",
+      model: "gpt-5.2",
+      payload: {
+        messages: [
+          { role: "system", content: "Return JSON only" },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "describe this image" },
+              { type: "image_url", image_url: { url: "data:image/png;base64,AAAA", detail: "auto" } }
+            ]
+          }
+        ]
+      }
+    });
+
+    expect(result.finalPrompt).toBe("from-multimodal");
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://example.com/v1/responses",
+      expect.objectContaining({
+        body: JSON.stringify({
+          model: "gpt-5.2",
+          instructions: "Return JSON only",
+          input: [
+            {
+              role: "user",
+              content: [
+                { type: "input_text", text: "Respond in JSON." },
+                { type: "input_text", text: "describe this image" },
+                { type: "input_image", image_url: "data:image/png;base64,AAAA", detail: "auto" }
+              ]
+            }
+          ],
+          text: {
+            format: {
+              type: "json_object"
+            }
+          }
+        })
+      })
+    );
+  });
+
   it("includes responses api error details when fallback request fails", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({
@@ -400,7 +465,7 @@ describe("callOpenAiCompatibleProvider", () => {
           messages: [{ role: "user", content: "hello" }]
         }
       })
-    ).rejects.toThrow(/Responses API completed without textual output.*Raw stream preview:/s);
+    ).rejects.toThrow(/Responses API completed without textual output[\s\S]*Raw stream preview:/);
   });
 
   it("includes a raw response preview when normalization still fails after fallback", async () => {
@@ -439,6 +504,6 @@ describe("callOpenAiCompatibleProvider", () => {
           messages: [{ role: "user", content: "hello" }]
         }
       })
-    ).rejects.toThrow(/Raw response preview:.*Raw stream preview:/s);
+    ).rejects.toThrow(/Raw response preview:[\s\S]*Raw stream preview:/);
   });
 });

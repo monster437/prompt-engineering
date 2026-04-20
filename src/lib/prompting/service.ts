@@ -1,8 +1,18 @@
 import { ConfigType, WorkspaceStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { runPromptOrchestration } from "@/lib/prompting/orchestrator";
-import { GeneratePromptRequest, PromptSummary, RefinePromptRequest } from "@/lib/types";
+import {
+  GeneratePromptRequest,
+  ImageAspectRatio,
+  PromptSummary,
+  RefinePromptRequest,
+  SourcePromptImage
+} from "@/lib/types";
 import { decryptSecret } from "@/lib/security/crypto";
+
+type PromptExecutionOptions = {
+  signal?: AbortSignal;
+};
 
 function parseJsonArray(value: string) {
   return JSON.parse(value) as string[];
@@ -10,6 +20,18 @@ function parseJsonArray(value: string) {
 
 function parsePromptSummary(value: string | null) {
   return value ? (JSON.parse(value) as PromptSummary) : null;
+}
+
+function parseSourcePromptImages(value: string | null) {
+  if (!value) {
+    return [];
+  }
+
+  try {
+    return JSON.parse(value) as SourcePromptImage[];
+  } catch {
+    return [];
+  }
 }
 
 async function loadPromptContext(workspaceId: string, selectedConfigId: string) {
@@ -25,7 +47,7 @@ async function loadPromptContext(workspaceId: string, selectedConfigId: string) 
   return { workspace, config };
 }
 
-export async function runGeneratePrompt(input: GeneratePromptRequest) {
+export async function runGeneratePrompt(input: GeneratePromptRequest, options: PromptExecutionOptions = {}) {
   const { workspace, config } = await loadPromptContext(input.workspaceId, input.selectedConfigId);
 
   const result = await runPromptOrchestration({
@@ -34,7 +56,9 @@ export async function runGeneratePrompt(input: GeneratePromptRequest) {
       mode: workspace.mode === "INTERVIEW" ? "interview" : "optimize",
       outputLanguage: workspace.outputLanguage === "ZH" ? "zh" : "en",
       selectedTargetType: workspace.selectedTargetType,
+      selectedImageAspectRatio: workspace.selectedImageAspectRatio as ImageAspectRatio,
       sourcePrompt: input.sourcePrompt,
+      sourcePromptImages: input.sourcePromptImages,
       questionMessages: parseJsonArray(workspace.questionMessages),
       answers: parseJsonArray(workspace.answers),
       finalPrompt: workspace.finalPrompt,
@@ -45,7 +69,8 @@ export async function runGeneratePrompt(input: GeneratePromptRequest) {
       endpoint: "/v1/chat/completions",
       baseURL: config.baseUrl,
       apiKey: decryptSecret(config.apiKey),
-      model: input.selectedTextModel
+      model: input.selectedTextModel,
+      ...(options.signal ? { signal: options.signal } : {})
     }
   });
 
@@ -65,7 +90,9 @@ export async function runGeneratePrompt(input: GeneratePromptRequest) {
         selectedTextConfig: config.id,
         selectedTextModel: input.selectedTextModel,
         sourcePrompt: input.sourcePrompt,
+        sourcePromptImages: JSON.stringify(input.sourcePromptImages),
         questionMessages: JSON.stringify([...parseJsonArray(workspace.questionMessages), question]),
+        generatedImageResult: null,
         status: WorkspaceStatus.ASKING
       }
     });
@@ -82,8 +109,10 @@ export async function runGeneratePrompt(input: GeneratePromptRequest) {
       selectedTextConfig: config.id,
       selectedTextModel: input.selectedTextModel,
       sourcePrompt: input.sourcePrompt,
+      sourcePromptImages: JSON.stringify(input.sourcePromptImages),
       finalPrompt: result.finalPrompt ?? null,
       parameterSummary: result.summary ? JSON.stringify(result.summary) : null,
+      generatedImageResult: null,
       status: WorkspaceStatus.IDLE
     }
   });
@@ -91,7 +120,7 @@ export async function runGeneratePrompt(input: GeneratePromptRequest) {
   return result;
 }
 
-export async function runRefinePrompt(input: RefinePromptRequest) {
+export async function runRefinePrompt(input: RefinePromptRequest, options: PromptExecutionOptions = {}) {
   const { workspace, config } = await loadPromptContext(input.workspaceId, input.selectedConfigId);
 
   const result = await runPromptOrchestration({
@@ -100,7 +129,9 @@ export async function runRefinePrompt(input: RefinePromptRequest) {
       mode: workspace.mode === "INTERVIEW" ? "interview" : "optimize",
       outputLanguage: workspace.outputLanguage === "ZH" ? "zh" : "en",
       selectedTargetType: workspace.selectedTargetType,
+      selectedImageAspectRatio: workspace.selectedImageAspectRatio as ImageAspectRatio,
       sourcePrompt: workspace.sourcePrompt,
+      sourcePromptImages: parseSourcePromptImages(workspace.sourcePromptImages),
       questionMessages: parseJsonArray(workspace.questionMessages),
       answers: parseJsonArray(workspace.answers),
       finalPrompt: workspace.finalPrompt,
@@ -111,7 +142,8 @@ export async function runRefinePrompt(input: RefinePromptRequest) {
       endpoint: "/v1/chat/completions",
       baseURL: config.baseUrl,
       apiKey: decryptSecret(config.apiKey),
-      model: input.selectedTextModel
+      model: input.selectedTextModel,
+      ...(options.signal ? { signal: options.signal } : {})
     }
   });
 
@@ -127,6 +159,7 @@ export async function runRefinePrompt(input: RefinePromptRequest) {
       refineInstruction: input.refineInstruction,
       finalPrompt: result.finalPrompt ?? null,
       parameterSummary: result.summary ? JSON.stringify(result.summary) : null,
+      generatedImageResult: null,
       status: WorkspaceStatus.IDLE
     }
   });

@@ -13,13 +13,17 @@ const { findManyMock, updateMock } = vi.hoisted(() => ({
       selectedTextModel: null,
       selectedTextConfig: null,
       selectedTargetType: "general",
+      selectedImageConfig: null,
+      selectedImageAspectRatio: "auto",
       selectedImageModel: null,
       sourcePrompt: "",
+      sourcePromptImages: "[]",
       questionMessages: "[]",
       answers: "[]",
       finalPrompt: null,
       parameterSummary: null,
       refineInstruction: null,
+      generatedImageResult: null,
       status: "IDLE",
       createdAt: new Date(),
       updatedAt: new Date()
@@ -33,13 +37,17 @@ const { findManyMock, updateMock } = vi.hoisted(() => ({
     selectedTextModel: null,
     selectedTextConfig: null,
     selectedTargetType: "general",
+    selectedImageConfig: "cfg_image_1",
+    selectedImageAspectRatio: "9:16",
     selectedImageModel: null,
     sourcePrompt: "",
+    sourcePromptImages: "[]",
     questionMessages: JSON.stringify(["风格是什么？"]),
     answers: JSON.stringify(["电影感"]),
     finalPrompt: null,
     parameterSummary: null,
     refineInstruction: null,
+    generatedImageResult: null,
     status: "ASKING",
     createdAt: new Date(),
     updatedAt: new Date()
@@ -116,6 +124,7 @@ describe("workspace mapping", () => {
     expect(json[0]).toMatchObject({
       mode: "optimize",
       outputLanguage: "zh",
+      sourcePromptImages: [],
       questionMessages: [],
       answers: []
     });
@@ -131,8 +140,11 @@ describe("workspace mapping", () => {
         selectedTextModel: null,
         selectedTextConfig: null,
         selectedTargetType: "general",
+        selectedImageConfig: "cfg_image_1",
+        selectedImageAspectRatio: "9:16",
         selectedImageModel: null,
         sourcePrompt: "海边少女",
+        sourcePromptImages: JSON.stringify([]),
         questionMessages: "[]",
         answers: "[]",
         finalPrompt: "prompt",
@@ -146,6 +158,16 @@ describe("workspace mapping", () => {
           extras: []
         }),
         refineInstruction: null,
+        generatedImageResult: JSON.stringify({
+          images: [{ url: "https://example.com/generated.png" }],
+          revisedPrompt: "海边少女，电影感",
+          usedPrompt: "A cinematic beach girl at sunset",
+          promptSource: "enhanced",
+          promptEnhancementError: null,
+          selectedImageConfig: "cfg_image_1",
+          selectedImageModel: "gpt-image-1",
+          selectedImageAspectRatio: "9:16"
+        }),
         status: "IDLE",
         createdAt: new Date(),
         updatedAt: new Date()
@@ -164,6 +186,49 @@ describe("workspace mapping", () => {
       composition: "wide shot",
       extras: []
     });
+    expect(json[0].sourcePromptImages).toEqual([]);
+    expect(json[0].generatedImageResult).toEqual({
+      images: [{ url: "https://example.com/generated.png" }],
+      revisedPrompt: "海边少女，电影感",
+      usedPrompt: "A cinematic beach girl at sunset",
+      promptSource: "enhanced",
+      promptEnhancementError: null,
+      selectedImageConfig: "cfg_image_1",
+      selectedImageModel: "gpt-image-1",
+      selectedImageAspectRatio: "9:16"
+    });
+  });
+
+  it("serializes a valid generated image result in prisma update data", () => {
+    expect(
+      toWorkspaceUpdateData({
+        selectedImageConfig: "cfg_image_1",
+        selectedImageAspectRatio: "9:16",
+        generatedImageResult: {
+          images: [{ url: "https://example.com/generated.png" }],
+          revisedPrompt: "cinematic beach",
+          usedPrompt: "A cinematic beach girl at sunset",
+          promptSource: "enhanced",
+          promptEnhancementError: null,
+          selectedImageConfig: "cfg_image_1",
+          selectedImageModel: "gpt-image-1",
+          selectedImageAspectRatio: "9:16"
+        }
+      })
+    ).toEqual({
+      selectedImageConfig: "cfg_image_1",
+      selectedImageAspectRatio: "9:16",
+      generatedImageResult: JSON.stringify({
+        images: [{ url: "https://example.com/generated.png" }],
+        revisedPrompt: "cinematic beach",
+        usedPrompt: "A cinematic beach girl at sunset",
+        promptSource: "enhanced",
+        promptEnhancementError: null,
+        selectedImageConfig: "cfg_image_1",
+        selectedImageModel: "gpt-image-1",
+        selectedImageAspectRatio: "9:16"
+      })
+    });
   });
 
   it("returns patched workspace dto shape", async () => {
@@ -173,6 +238,8 @@ describe("workspace mapping", () => {
         body: JSON.stringify({
           mode: "interview",
           outputLanguage: "en",
+          selectedImageConfig: "cfg_image_1",
+          selectedImageAspectRatio: "9:16",
           questionMessages: ["风格是什么？"],
           answers: ["电影感"],
           status: "asking"
@@ -188,6 +255,8 @@ describe("workspace mapping", () => {
     expect(json).toMatchObject({
       mode: "interview",
       outputLanguage: "en",
+      selectedImageConfig: "cfg_image_1",
+      selectedImageAspectRatio: "9:16",
       questionMessages: ["风格是什么？"],
       answers: ["电影感"],
       status: "asking"
@@ -197,6 +266,8 @@ describe("workspace mapping", () => {
       data: {
         mode: WorkspaceMode.INTERVIEW,
         outputLanguage: OutputLanguage.EN,
+        selectedImageConfig: "cfg_image_1",
+        selectedImageAspectRatio: "9:16",
         questionMessages: JSON.stringify(["风格是什么？"]),
         answers: JSON.stringify(["电影感"]),
         status: WorkspaceStatus.ASKING

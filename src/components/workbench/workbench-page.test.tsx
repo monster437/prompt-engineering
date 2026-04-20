@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 const {
   createWorkspaceMock,
   deleteWorkspaceMock,
+  generateImageMock,
   generatePromptMock,
   listModelOptionsMock,
   listWorkspacesMock,
@@ -11,6 +12,7 @@ const {
 } = vi.hoisted(() => ({
   createWorkspaceMock: vi.fn(),
   deleteWorkspaceMock: vi.fn(),
+  generateImageMock: vi.fn(),
   generatePromptMock: vi.fn(),
   listModelOptionsMock: vi.fn(),
   listWorkspacesMock: vi.fn(),
@@ -21,6 +23,7 @@ const {
 vi.mock("@/lib/workbench-client", () => ({
   createWorkspace: createWorkspaceMock,
   deleteWorkspace: deleteWorkspaceMock,
+  generateImage: generateImageMock,
   generatePrompt: generatePromptMock,
   listModelOptions: listModelOptionsMock,
   listWorkspaces: listWorkspacesMock,
@@ -41,6 +44,7 @@ describe("WorkbenchPage", () => {
     expect(createWorkspaceMock).toBeDefined();
     expect(updateWorkspaceMock).toBeDefined();
     expect(deleteWorkspaceMock).toBeDefined();
+    expect(generateImageMock).toBeDefined();
     expect(generatePromptMock).toBeDefined();
     expect(refinePromptMock).toBeDefined();
   });

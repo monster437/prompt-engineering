@@ -7,3 +7,5 @@ node_modules/
 prisma/dev.db
 记录.md
 docs/superpowers/plans/
+
+tsconfig.tsbuildinfo

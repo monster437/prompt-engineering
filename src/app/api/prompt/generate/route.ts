@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await runGeneratePrompt(payload.data);
+    const result = await runGeneratePrompt(payload.data, { signal: request.signal });
     return Response.json(result);
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "Prompt generation failed", 500);

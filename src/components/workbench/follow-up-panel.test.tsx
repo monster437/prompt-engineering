@@ -13,13 +13,17 @@ function makeWorkspace(overrides: Partial<WorkspaceDto> = {}): WorkspaceDto {
     selectedTextModel: null,
     selectedTextConfig: null,
     selectedTargetType: "general",
+    selectedImageConfig: null,
+    selectedImageAspectRatio: "auto",
     selectedImageModel: null,
     sourcePrompt: "A rainy neon street",
+    sourcePromptImages: [],
     questionMessages: [],
     answers: [],
     finalPrompt: null,
     parameterSummary: null,
     refineInstruction: null,
+    generatedImageResult: null,
     status: "idle",
     ...overrides
   };
