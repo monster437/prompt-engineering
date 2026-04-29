@@ -9,3 +9,4 @@ prisma/dev.db
 docs/superpowers/plans/
 
 tsconfig.tsbuildinfo
+codex-dev-*.log

@@ -192,50 +192,64 @@ describe("listImageCatalog", () => {
           height: null
         },
         {
-          value: "16:9",
-          label: "16:9",
-          resolution: "1536x1024",
-          width: 1536,
+          value: "16:9@1792x1024",
+          label: "16:9（1792x1024）",
+          resolution: "1792x1024",
+          width: 1792,
           height: 1024
         },
         {
-          value: "9:16",
-          label: "9:16",
-          resolution: "1024x1536",
+          value: "16:9@1280x720",
+          label: "16:9（1280x720）",
+          resolution: "1280x720",
+          width: 1280,
+          height: 720
+        },
+        {
+          value: "9:16@1024x1792",
+          label: "9:16（1024x1792）",
+          resolution: "1024x1792",
           width: 1024,
-          height: 1536
+          height: 1792
+        },
+        {
+          value: "9:16@720x1280",
+          label: "9:16（720x1280）",
+          resolution: "720x1280",
+          width: 720,
+          height: 1280
         },
         {
           value: "2:3",
           label: "2:3",
-          resolution: "1024x1536",
-          width: 1024,
-          height: 1536
+          resolution: null,
+          width: null,
+          height: null
         },
         {
           value: "3:2",
           label: "3:2",
-          resolution: "1536x1024",
-          width: 1536,
-          height: 1024
+          resolution: null,
+          width: null,
+          height: null
         },
         {
           value: "4:3",
           label: "4:3",
-          resolution: "1536x1024",
-          width: 1536,
-          height: 1024
+          resolution: null,
+          width: null,
+          height: null
         },
         {
           value: "3:4",
           label: "3:4",
-          resolution: "1024x1536",
-          width: 1024,
-          height: 1536
+          resolution: null,
+          width: null,
+          height: null
         },
         {
-          value: "1:1",
-          label: "1:1",
+          value: "1:1@1024x1024",
+          label: "1:1（1024x1024）",
           resolution: "1024x1024",
           width: 1024,
           height: 1024
@@ -258,7 +272,18 @@ describe("listImageCatalog", () => {
           label: "Grok Imagine Image Pro",
           providerId: "xai",
           ability: "image",
-          supportedAspectRatios: ["auto", "16:9", "9:16", "2:3", "3:2", "4:3", "3:4", "1:1"],
+          supportedAspectRatios: [
+            "auto",
+            "16:9@1792x1024",
+            "16:9@1280x720",
+            "9:16@1024x1792",
+            "9:16@720x1280",
+            "2:3",
+            "3:2",
+            "4:3",
+            "3:4",
+            "1:1@1024x1024"
+          ],
           defaultAspectRatio: "auto",
           defaultResolution: "auto"
         },
@@ -269,7 +294,18 @@ describe("listImageCatalog", () => {
           modelName: "flux-dev",
           label: "FLUX Dev",
           ability: "image",
-          supportedAspectRatios: ["auto", "16:9", "9:16", "2:3", "3:2", "4:3", "3:4", "1:1"],
+          supportedAspectRatios: [
+            "auto",
+            "16:9@1792x1024",
+            "16:9@1280x720",
+            "9:16@1024x1792",
+            "9:16@720x1280",
+            "2:3",
+            "3:2",
+            "4:3",
+            "3:4",
+            "1:1@1024x1024"
+          ],
           defaultAspectRatio: "auto",
           defaultResolution: "auto"
         }

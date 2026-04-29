@@ -10,6 +10,7 @@ import {
   buildOptimizeSystemPrompt,
   buildRefineSystemPrompt
 } from "@/lib/prompting/system-prompts";
+import { getDisplayAspectRatio } from "@/lib/image-generation/catalog";
 import { getResolvedCameraOrientationLabel } from "@/lib/style-tags";
 
 const ASPECT_RATIO_PATTERN = /\b\d+\s*[:：]\s*\d+\b/g;
@@ -27,12 +28,13 @@ function buildReferenceImageHint(referenceImageCount: number) {
 function buildUserMessageText(input: PromptOrchestratorInput) {
   const selectedCameraOrientationLabel = getResolvedCameraOrientationLabel(input.workspace.selectedTargetType);
   const referenceImageHint = buildReferenceImageHint(input.workspace.sourcePromptImages.length);
+  const selectedAspectRatioLabel = getDisplayAspectRatio(input.workspace.selectedImageAspectRatio);
 
   if (input.action === "optimize") {
     return [
       `Source prompt:\n${buildSourcePromptText(input.workspace.sourcePrompt)}`,
       referenceImageHint,
-      `Selected aspect ratio:\n${input.workspace.selectedImageAspectRatio}`,
+      `Selected aspect ratio:\n${selectedAspectRatioLabel}`,
       `Selected camera orientation:\n${selectedCameraOrientationLabel}`
     ].join("\n\n");
   }
@@ -41,7 +43,7 @@ function buildUserMessageText(input: PromptOrchestratorInput) {
     return [
       `Source prompt:\n${buildSourcePromptText(input.workspace.sourcePrompt)}`,
       referenceImageHint,
-      `Selected aspect ratio:\n${input.workspace.selectedImageAspectRatio}`,
+      `Selected aspect ratio:\n${selectedAspectRatioLabel}`,
       `Selected camera orientation:\n${selectedCameraOrientationLabel}`,
       `Previous questions:\n${JSON.stringify(input.workspace.questionMessages)}`,
       `Previous answers:\n${JSON.stringify(input.workspace.answers)}`
@@ -53,7 +55,7 @@ function buildUserMessageText(input: PromptOrchestratorInput) {
     referenceImageHint,
     `Current final prompt:\n${input.workspace.finalPrompt ?? ""}`,
     `Current summary:\n${JSON.stringify(input.workspace.parameterSummary)}`,
-    `Selected aspect ratio:\n${input.workspace.selectedImageAspectRatio}`,
+    `Selected aspect ratio:\n${selectedAspectRatioLabel}`,
     `Selected camera orientation:\n${selectedCameraOrientationLabel}`,
     `Refine instruction:\n${input.workspace.refineInstruction ?? ""}`
   ].join("\n\n");
@@ -107,18 +109,20 @@ function buildSystemPrompt(input: PromptOrchestratorInput) {
 }
 
 function normalizeAspectRatioText(text: string, aspectRatio: PromptOrchestratorInput["workspace"]["selectedImageAspectRatio"]) {
-  if (aspectRatio === "auto") {
+  const displayAspectRatio = getDisplayAspectRatio(aspectRatio);
+
+  if (displayAspectRatio === "auto") {
     return text;
   }
 
-  return text.replace(ASPECT_RATIO_PATTERN, aspectRatio);
+  return text.replace(ASPECT_RATIO_PATTERN, displayAspectRatio);
 }
 
 function normalizeAspectRatioResult(
   result: Awaited<ReturnType<typeof callOpenAiCompatibleProvider>>,
   aspectRatio: PromptOrchestratorInput["workspace"]["selectedImageAspectRatio"]
 ) {
-  if (result.status !== "completed" || aspectRatio === "auto") {
+  if (result.status !== "completed" || getDisplayAspectRatio(aspectRatio) === "auto") {
     return result;
   }
 

@@ -1,5 +1,5 @@
 import { ProviderInvocation, ProviderMessage, ProviderMessageContentPart } from "@/lib/prompting/contracts";
-import { getImageSizeForAspectRatio } from "@/lib/image-generation/catalog";
+import { getDisplayAspectRatio, getImageSizeForAspectRatio } from "@/lib/image-generation/catalog";
 import type { DiagnoseImageProviderResult, GenerateImageResult, ImageAspectRatio } from "@/lib/types";
 import { normalizeProviderResponse } from "@/lib/providers/normalize";
 
@@ -279,13 +279,19 @@ async function requestImageGeneration(input: ImageProviderInvocation) {
     model: input.model,
     prompt: input.prompt
   };
+  const displayAspectRatio = getDisplayAspectRatio(input.aspectRatio);
+  const mappedSize = getImageSizeForAspectRatio(input.aspectRatio);
 
-  if (isXaiImageRequest(input)) {
-    requestBody.aspect_ratio = input.aspectRatio;
-  } else {
-    const mappedSize = getImageSizeForAspectRatio(input.aspectRatio);
-    if (mappedSize) {
-      requestBody.size = mappedSize;
+  if (supportsAspectRatioParameter(input) && displayAspectRatio !== "auto") {
+    requestBody.aspect_ratio = displayAspectRatio;
+  }
+
+  if (mappedSize && mappedSize !== "auto") {
+    requestBody.size = mappedSize;
+  } else if (!supportsAspectRatioParameter(input)) {
+    const fallbackSize = getLegacyImageSizeForAspectRatio(displayAspectRatio);
+    if (fallbackSize) {
+      requestBody.size = fallbackSize;
     }
   }
 
@@ -467,8 +473,23 @@ export async function diagnoseOpenAiCompatibleImageProvider(
   };
 }
 
-function isXaiImageRequest(input: Pick<ImageProviderInvocation, "baseURL" | "model">) {
-  return /(^https?:\/\/)?api\.x\.ai(\/|$)/i.test(input.baseURL.trim()) || /^grok-imagine-image/i.test(input.model);
+function supportsAspectRatioParameter(input: Pick<ImageProviderInvocation, "baseURL" | "model">) {
+  return /(^https?:\/\/)?api\.x\.ai(\/|$)/i.test(input.baseURL.trim()) || /^grok-imagine/i.test(input.model);
+}
+
+function getLegacyImageSizeForAspectRatio(aspectRatio: string) {
+  switch (aspectRatio) {
+    case "3:2":
+      return "1536x1024";
+    case "2:3":
+      return "1024x1536";
+    case "4:3":
+      return "1536x1152";
+    case "3:4":
+      return "1152x1536";
+    default:
+      return null;
+  }
 }
 
 function normalizeImageProviderResponse(payload: Record<string, any>): GenerateImageResult {

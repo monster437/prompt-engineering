@@ -11,16 +11,21 @@ describe("system prompts", () => {
     const prompt = buildOptimizeSystemPrompt({
       outputLanguage: "en",
       targetType: '{"styleTags":["xianxia","scene-narrative"],"cameraOrientation":"auto"}',
-      aspectRatio: "16:9"
+      aspectRatio: "16:9@1792x1024"
     });
 
     expect(prompt).toContain("玄幻修仙");
     expect(prompt).toContain("场景叙事");
     expect(prompt).toContain("English");
     expect(prompt).toContain("16:9");
+    expect(prompt).not.toContain("16:9@1792x1024");
     expect(prompt).toContain("camera orientation");
-    expect(prompt).toContain("远景小人物");
-    expect(prompt).toContain("背影");
+    expect(prompt).toContain("环境远景");
+    expect(prompt).not.toContain("远景小人物");
+    expect(prompt).toContain("Preserve the user's explicit main subject");
+    expect(prompt).toContain("do not invent a human, character, traveler, creature, portrait, body, or silhouette");
+    expect(prompt).toContain("Manual character or figure camera orientations count as explicit composition instructions");
+    expect(prompt).toContain("auto camera mode does not");
     expect(prompt).toContain("Return JSON only");
     expect(prompt).toContain("summary");
     expect(prompt).toContain("contextSnapshot");
@@ -30,13 +35,14 @@ describe("system prompts", () => {
     const prompt = buildInterviewSystemPrompt({
       outputLanguage: "zh",
       targetType: '{"styleTags":["general"],"cameraOrientation":"back"}',
-      aspectRatio: "9:16",
+      aspectRatio: "9:16@1024x1792",
       canAskFollowUp: false
     });
 
     expect(prompt).toContain("通用");
     expect(prompt).toContain("中文");
     expect(prompt).toContain("9:16");
+    expect(prompt).not.toContain("9:16@1024x1792");
     expect(prompt).toContain("背影");
     expect(prompt).toContain("Do not ask another question");
   });
@@ -45,12 +51,13 @@ describe("system prompts", () => {
     const prompt = buildRefineSystemPrompt({
       outputLanguage: "zh",
       targetType: '{"styleTags":["cute-romance","soft-romance-light"],"cameraOrientation":"three-quarter"}',
-      aspectRatio: "3:2"
+      aspectRatio: "16:9@1280x720"
     });
 
     expect(prompt).toContain("可爱言情");
     expect(prompt).toContain("柔光恋爱");
-    expect(prompt).toContain("3:2");
+    expect(prompt).toContain("16:9");
+    expect(prompt).not.toContain("16:9@1280x720");
     expect(prompt).toContain("3/4侧脸");
     expect(prompt).toContain("修改现有提示词");
     expect(prompt).toContain("Return JSON only");

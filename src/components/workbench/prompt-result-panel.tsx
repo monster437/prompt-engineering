@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
+import { createRoot, type Root } from "react-dom/client";
 import type { GenerateImageResult, WorkspaceDto } from "@/lib/types";
+import { getDisplayAspectRatio } from "@/lib/image-generation/catalog";
 
 type PromptResultPanelProps = {
   workspace: WorkspaceDto;
@@ -28,6 +30,295 @@ const summaryFields: Array<{ key: keyof NonNullable<WorkspaceDto["parameterSumma
   { key: "composition", label: "构图" }
 ];
 
+const IMAGE_DOWNLOAD_RANDOM_TOKEN_BYTES = 4;
+
+function sanitizeImageDownloadFilenamePart(value: string) {
+  return value.replace(/[^\w\u4e00-\u9fa5-]+/g, "_");
+}
+
+export function createImageDownloadRandomToken() {
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const randomBytes = new Uint8Array(IMAGE_DOWNLOAD_RANDOM_TOKEN_BYTES);
+    crypto.getRandomValues(randomBytes);
+
+    return Array.from(randomBytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  return Math.random().toString(16).slice(2, 10).padEnd(8, "0");
+}
+
+type BuildImageDownloadFilenameBaseInput = {
+  workspaceTitle: string;
+  imageModel: string;
+  imageAspectRatio: string;
+  imageIndex: number;
+  randomToken?: string;
+};
+
+export function buildImageDownloadFilenameBase({
+  workspaceTitle,
+  imageModel,
+  imageAspectRatio,
+  imageIndex,
+  randomToken = createImageDownloadRandomToken()
+}: BuildImageDownloadFilenameBaseInput) {
+  const safeTitle = workspaceTitle.trim() ? workspaceTitle.trim() : "workspace";
+  const displayAspectRatio = getDisplayAspectRatio(imageAspectRatio);
+  const readableFilenameBase = sanitizeImageDownloadFilenamePart(
+    [safeTitle, imageModel, displayAspectRatio, `${imageIndex + 1}`].join("-")
+  );
+  const safeRandomToken = sanitizeImageDownloadFilenamePart(randomToken) || createImageDownloadRandomToken();
+
+  return `img-${safeRandomToken}-${readableFilenameBase}`;
+}
+
+export const IMAGE_PREVIEW_MIN_SCALE = 0.4;
+export const IMAGE_PREVIEW_MAX_SCALE = 4;
+const IMAGE_PREVIEW_DEFAULT_SCALE = 1;
+const IMAGE_PREVIEW_STEP = 0.2;
+
+let activeImagePreviewRoot: Root | null = null;
+let activeImagePreviewContainer: HTMLDivElement | null = null;
+let removeImagePreviewKeydownListener: (() => void) | null = null;
+let restoreBodyOverflow: string | null = null;
+
+function roundImagePreviewScale(scale: number) {
+  return Math.round(scale * 100) / 100;
+}
+
+export function clampImagePreviewScale(scale: number) {
+  if (!Number.isFinite(scale)) {
+    return IMAGE_PREVIEW_DEFAULT_SCALE;
+  }
+
+  return roundImagePreviewScale(Math.min(IMAGE_PREVIEW_MAX_SCALE, Math.max(IMAGE_PREVIEW_MIN_SCALE, scale)));
+}
+
+export function getNextImagePreviewScale(currentScale: number, deltaY: number) {
+  if (deltaY === 0) {
+    return clampImagePreviewScale(currentScale);
+  }
+
+  return clampImagePreviewScale(currentScale + (deltaY < 0 ? IMAGE_PREVIEW_STEP : -IMAGE_PREVIEW_STEP));
+}
+
+type ImagePreviewModalProps = {
+  imageUrl: string;
+  imageAlt: string;
+  scale: number;
+  panX: number;
+  panY: number;
+  onClose: () => void;
+  onWheel: (event: React.WheelEvent<HTMLDivElement>) => void;
+  onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerCancel: (event: React.PointerEvent<HTMLDivElement>) => void;
+};
+
+type ImagePreviewPanState = {
+  startClientX: number;
+  startClientY: number;
+  originPanX: number;
+  originPanY: number;
+};
+
+export function getNextImagePreviewPanOffset(
+  panState: ImagePreviewPanState,
+  clientX: number,
+  clientY: number
+) {
+  return {
+    panX: panState.originPanX + clientX - panState.startClientX,
+    panY: panState.originPanY + clientY - panState.startClientY
+  };
+}
+
+export function ImagePreviewModal({
+  imageUrl,
+  imageAlt,
+  scale,
+  panX,
+  panY,
+  onClose,
+  onWheel,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel
+}: ImagePreviewModalProps) {
+  return (
+    <div
+      role="presentation"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal={true}
+        aria-label="图片预览"
+        className="flex max-h-full w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-4 py-3 text-slate-100">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">图片预览</p>
+            <p className="text-xs text-slate-400">
+              点击空白处关闭 · 滚轮缩放 · 当前 {Math.round(scale * 100)}%
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="关闭图片预览"
+            onClick={onClose}
+            className="rounded-full border border-slate-700 px-3 py-1 text-xl leading-none text-slate-200 transition hover:border-slate-500 hover:text-white"
+          >
+            ×
+          </button>
+        </div>
+        <div
+          className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4"
+          onWheel={onWheel}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerCancel}
+          style={{ cursor: "grab", touchAction: "none" }}
+        >
+          <img
+            src={imageUrl}
+            alt={imageAlt}
+            draggable={false}
+            className="max-h-full max-w-full object-contain transition-transform duration-100 ease-out"
+            style={{
+              transform: `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`,
+              transformOrigin: "center center",
+              userSelect: "none"
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function closeActiveImagePreview() {
+  activeImagePreviewRoot?.unmount();
+  activeImagePreviewRoot = null;
+
+  if (activeImagePreviewContainer) {
+    activeImagePreviewContainer.remove();
+    activeImagePreviewContainer = null;
+  }
+
+  removeImagePreviewKeydownListener?.();
+  removeImagePreviewKeydownListener = null;
+
+  if (restoreBodyOverflow !== null && typeof document !== "undefined") {
+    document.body.style.overflow = restoreBodyOverflow;
+  }
+
+  restoreBodyOverflow = null;
+}
+
+function openImagePreview(url: string, alt: string) {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return;
+  }
+
+  closeActiveImagePreview();
+
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+
+  activeImagePreviewContainer = container;
+  activeImagePreviewRoot = createRoot(container);
+
+  restoreBodyOverflow = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      closeActiveImagePreview();
+    }
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+  removeImagePreviewKeydownListener = () => {
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+
+  let currentScale = IMAGE_PREVIEW_DEFAULT_SCALE;
+  let currentPanX = 0;
+  let currentPanY = 0;
+  let panState: ImagePreviewPanState | null = null;
+
+  const stopDraggingPreview = (element?: HTMLDivElement | null, pointerId?: number) => {
+    if (element && pointerId !== undefined && element.hasPointerCapture(pointerId)) {
+      element.releasePointerCapture(pointerId);
+    }
+
+    if (element) {
+      element.style.cursor = "grab";
+    }
+
+    panState = null;
+  };
+
+  const renderPreview = () => {
+    activeImagePreviewRoot?.render(
+      <ImagePreviewModal
+        imageUrl={url}
+        imageAlt={alt}
+        scale={currentScale}
+        panX={currentPanX}
+        panY={currentPanY}
+        onClose={closeActiveImagePreview}
+        onWheel={(event) => {
+          event.preventDefault();
+          currentScale = getNextImagePreviewScale(currentScale, event.deltaY);
+          renderPreview();
+        }}
+        onPointerDown={(event) => {
+          if (event.button !== 0) {
+            return;
+          }
+
+          panState = {
+            startClientX: event.clientX,
+            startClientY: event.clientY,
+            originPanX: currentPanX,
+            originPanY: currentPanY
+          };
+
+          event.preventDefault();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          event.currentTarget.style.cursor = "grabbing";
+        }}
+        onPointerMove={(event) => {
+          if (!panState) {
+            return;
+          }
+
+          event.preventDefault();
+          const nextOffset = getNextImagePreviewPanOffset(panState, event.clientX, event.clientY);
+          currentPanX = nextOffset.panX;
+          currentPanY = nextOffset.panY;
+          renderPreview();
+        }}
+        onPointerUp={(event) => {
+          stopDraggingPreview(event.currentTarget, event.pointerId);
+        }}
+        onPointerCancel={(event) => {
+          stopDraggingPreview(event.currentTarget, event.pointerId);
+        }}
+      />
+    );
+  };
+
+  renderPreview();
+}
+
 export function PromptResultPanel({
   workspace,
   refineDraft,
@@ -43,26 +334,20 @@ export function PromptResultPanel({
   onStopGenerateImage,
   onDiagnoseImage
 }: PromptResultPanelProps) {
-  function openImage(url: string) {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-
-  async function downloadImage(url: string, index: number) {
+  async function downloadImage(url: string, index: number, alt: string) {
     if (typeof document === "undefined") {
       return;
     }
 
-    const safeTitle = workspace.title.trim() ? workspace.title.trim() : "workspace";
     const resultImageModel = imageResult?.selectedImageModel ?? workspace.selectedImageModel ?? "image";
     const resultImageAspectRatio =
       imageResult?.selectedImageAspectRatio ?? workspace.selectedImageAspectRatio;
-    const filenameBase = [safeTitle, resultImageModel, resultImageAspectRatio, `${index + 1}`]
-      .join("-")
-      .replace(/[^\w\u4e00-\u9fa5-]+/g, "_");
+    const filenameBase = buildImageDownloadFilenameBase({
+      workspaceTitle: workspace.title,
+      imageModel: resultImageModel,
+      imageAspectRatio: resultImageAspectRatio,
+      imageIndex: index
+    });
 
     const anchor = document.createElement("a");
 
@@ -93,7 +378,7 @@ export function PromptResultPanel({
       anchor.click();
       URL.revokeObjectURL(objectUrl);
     } catch {
-      openImage(url);
+      openImagePreview(url, alt);
     }
   }
 
@@ -174,7 +459,7 @@ export function PromptResultPanel({
               <h3 className="text-sm font-medium text-slate-900">图片结果</h3>
               <span className="text-xs text-slate-500">
                 {(imageResult?.selectedImageModel ?? workspace.selectedImageModel)
-                  ? `结果来源模型：${imageResult?.selectedImageModel ?? workspace.selectedImageModel} · 比例：${imageResult?.selectedImageAspectRatio ?? workspace.selectedImageAspectRatio}`
+                  ? `结果来源模型：${imageResult?.selectedImageModel ?? workspace.selectedImageModel} · 比例：${getDisplayAspectRatio(imageResult?.selectedImageAspectRatio ?? workspace.selectedImageAspectRatio)}`
                   : "未选择图像模型"}
               </span>
             </div>
@@ -203,42 +488,46 @@ export function PromptResultPanel({
                   </p>
                 ) : null}
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {imageResult.images.map((image, index) => (
-                    <div
-                      key={`${index}-${image.url.slice(0, 32)}`}
-                      className="space-y-2 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 p-2"
-                    >
-                      <button
-                        type="button"
-                        onDoubleClick={() => openImage(image.url)}
-                        onClick={() => undefined}
-                        className="block w-full overflow-hidden rounded-lg"
-                        title="双击打开原图"
+                  {imageResult.images.map((image, index) => {
+                    const imageAlt = `Generated result ${index + 1}`;
+
+                    return (
+                      <div
+                        key={`${index}-${image.url.slice(0, 32)}`}
+                        className="space-y-2 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 p-2"
                       >
-                        <img
-                          src={image.url}
-                          alt={`Generated result ${index + 1}`}
-                          className="h-full w-full object-cover"
-                        />
-                      </button>
-                      <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => openImage(image.url)}
-                          className="rounded-md border border-slate-300 px-3 py-2 text-xs text-slate-700"
+                          aria-label={`预览图片 ${index + 1}`}
+                          onDoubleClick={() => openImagePreview(image.url, imageAlt)}
+                          className="block w-full overflow-hidden rounded-lg"
+                          title="双击在当前页面查看大图"
                         >
-                          打开原图
+                          <img
+                            src={image.url}
+                            alt={imageAlt}
+                            className="h-full w-full object-cover"
+                          />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => void downloadImage(image.url, index)}
-                          className="rounded-md border border-slate-300 px-3 py-2 text-xs text-slate-700"
-                        >
-                          下载图片
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openImagePreview(image.url, imageAlt)}
+                            className="rounded-md border border-slate-300 px-3 py-2 text-xs text-slate-700"
+                          >
+                            打开原图
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void downloadImage(image.url, index, imageAlt)}
+                            className="rounded-md border border-slate-300 px-3 py-2 text-xs text-slate-700"
+                          >
+                            下载图片
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ) : (

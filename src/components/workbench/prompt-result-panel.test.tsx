@@ -3,7 +3,15 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { GenerateImageResult, PromptSummary, WorkspaceDto } from "@/lib/types";
 
-import { PromptResultPanel } from "./prompt-result-panel";
+import {
+  IMAGE_PREVIEW_MAX_SCALE,
+  IMAGE_PREVIEW_MIN_SCALE,
+  ImagePreviewModal,
+  PromptResultPanel,
+  buildImageDownloadFilenameBase,
+  getNextImagePreviewPanOffset,
+  getNextImagePreviewScale
+} from "./prompt-result-panel";
 
 function makeSummary(overrides: Partial<PromptSummary> = {}): PromptSummary {
   return {
@@ -52,12 +60,117 @@ function makeImageResult(overrides: Partial<GenerateImageResult> = {}): Generate
     promptEnhancementError: null,
     selectedImageConfig: "cfg_image_1",
     selectedImageModel: "gpt-image-1",
-    selectedImageAspectRatio: "9:16",
+    selectedImageAspectRatio: "9:16@1024x1792",
     ...overrides
   };
 }
 
 describe("PromptResultPanel", () => {
+  it("adds a random image prefix while keeping the readable download filename suffix", () => {
+    const firstFilenameBase = buildImageDownloadFilenameBase({
+      workspaceTitle: "Workspace 6",
+      imageModel: "gpt-image-2",
+      imageAspectRatio: "auto",
+      imageIndex: 0,
+      randomToken: "a3f91c8b"
+    });
+    const secondFilenameBase = buildImageDownloadFilenameBase({
+      workspaceTitle: "Workspace 6",
+      imageModel: "gpt-image-2",
+      imageAspectRatio: "auto",
+      imageIndex: 0,
+      randomToken: "f04d22aa"
+    });
+
+    expect(firstFilenameBase).toBe("img-a3f91c8b-Workspace_6-gpt-image-2-auto-1");
+    expect(secondFilenameBase).toBe("img-f04d22aa-Workspace_6-gpt-image-2-auto-1");
+    expect(firstFilenameBase).not.toBe(secondFilenameBase);
+  });
+
+  it("renders an in-app image preview modal with close affordances", () => {
+    const onClose = vi.fn();
+    const onWheel = vi.fn();
+    const html = ImagePreviewModal({
+      imageUrl: "https://example.com/generated.png",
+      imageAlt: "Generated result 1",
+      scale: 1.4,
+      panX: 0,
+      panY: 0,
+      onClose,
+      onWheel,
+      onPointerDown: vi.fn(),
+      onPointerMove: vi.fn(),
+      onPointerUp: vi.fn(),
+      onPointerCancel: vi.fn()
+    });
+
+    const output = JSON.stringify(html);
+    const modalCard = html.props.children;
+    const header = modalCard.props.children[0];
+    const closeButton = header.props.children[1];
+
+    expect(output).toContain("https://example.com/generated.png");
+    expect(output).toContain("关闭图片预览");
+    expect(output).toContain("滚轮缩放");
+    expect(html.props.role).toBe("presentation");
+    expect(modalCard.props.role).toBe("dialog");
+
+    closeButton.props.onClick();
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("clamps image preview wheel zoom within the supported range", () => {
+    expect(getNextImagePreviewScale(1, -120)).toBe(1.2);
+    expect(getNextImagePreviewScale(1, 120)).toBe(0.8);
+    expect(getNextImagePreviewScale(IMAGE_PREVIEW_MAX_SCALE, -120)).toBe(IMAGE_PREVIEW_MAX_SCALE);
+    expect(getNextImagePreviewScale(IMAGE_PREVIEW_MIN_SCALE, 120)).toBe(IMAGE_PREVIEW_MIN_SCALE);
+  });
+
+  it("supports dragging the preview image by transform instead of scroll position", () => {
+    const html = ImagePreviewModal({
+      imageUrl: "https://example.com/generated.png",
+      imageAlt: "Generated result 1",
+      scale: 1.4,
+      panX: 40,
+      panY: -20,
+      onClose: vi.fn(),
+      onWheel: vi.fn(),
+      onPointerDown: vi.fn(),
+      onPointerMove: vi.fn(),
+      onPointerUp: vi.fn(),
+      onPointerCancel: vi.fn()
+    });
+
+    const modalCard = html.props.children;
+    const viewport = modalCard.props.children[1];
+    const imageElement = viewport.props.children;
+
+    expect(viewport.props.className).toContain("overflow-hidden");
+    expect(viewport.props.className).not.toContain("overflow-auto");
+    expect(typeof viewport.props.onPointerDown).toBe("function");
+    expect(typeof viewport.props.onPointerMove).toBe("function");
+    expect(typeof viewport.props.onPointerUp).toBe("function");
+    expect(imageElement.props.draggable).toBe(false);
+    expect(imageElement.props.style.transform).toBe("translate3d(40px, -20px, 0) scale(1.4)");
+
+    expect(
+      getNextImagePreviewPanOffset(
+        {
+          startClientX: 200,
+          startClientY: 300,
+          originPanX: 40,
+          originPanY: -20
+        },
+        160,
+        240
+      )
+    ).toEqual({
+      panX: 0,
+      panY: -80
+    });
+  });
+
   it("renders final prompt and structured summary", () => {
     const html = PromptResultPanel({
       workspace: makeWorkspace({
@@ -139,7 +252,7 @@ describe("PromptResultPanel", () => {
       workspace: makeWorkspace({
         finalPrompt: "Prompt",
         selectedImageConfig: "cfg_image_1",
-        selectedImageAspectRatio: "9:16",
+        selectedImageAspectRatio: "9:16@1024x1792",
         selectedImageModel: "gpt-image-1"
       }),
       refineDraft: "",
@@ -167,6 +280,7 @@ describe("PromptResultPanel", () => {
     expect(output).toContain("下载图片");
     expect(output).toContain("结果来源模型：gpt-image-1");
     expect(output).toContain("比例：9:16");
+    expect(output).not.toContain("比例：9:16@1024x1792");
   });
 
   it("keeps showing the original image result metadata after switching to another image model", () => {
@@ -174,13 +288,13 @@ describe("PromptResultPanel", () => {
       workspace: makeWorkspace({
         finalPrompt: "Prompt",
         selectedImageConfig: "cfg_image_2",
-        selectedImageAspectRatio: "1:1",
+        selectedImageAspectRatio: "1:1@1024x1024",
         selectedImageModel: "flux-dev"
       }),
       refineDraft: "",
       imageResult: makeImageResult({
         selectedImageConfig: "cfg_image_1",
-        selectedImageAspectRatio: "9:16",
+        selectedImageAspectRatio: "9:16@1024x1792",
         selectedImageModel: "gpt-image-1"
       }),
       isCopying: false,
@@ -201,6 +315,7 @@ describe("PromptResultPanel", () => {
     expect(output).toContain("比例：9:16");
     expect(output).not.toContain("结果来源模型：flux-dev");
     expect(output).not.toContain("比例：1:1");
+    expect(output).not.toContain("比例：1:1@1024x1024");
   });
 
   it("wires refine draft, image generation, and copy handlers", () => {

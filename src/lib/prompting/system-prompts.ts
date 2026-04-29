@@ -1,4 +1,5 @@
 import { ImageAspectRatio, OutputLanguage } from "@/lib/types";
+import { getDisplayAspectRatio } from "@/lib/image-generation/catalog";
 import {
   formatSelectedStyleLabels,
   formatSelectedStylePromptHints,
@@ -25,14 +26,16 @@ function describeLanguage(outputLanguage: OutputLanguage) {
 }
 
 function buildAspectRatioInstructions(aspectRatio: ImageAspectRatio) {
-  if (aspectRatio === "auto") {
+  const displayAspectRatio = getDisplayAspectRatio(aspectRatio);
+
+  if (displayAspectRatio === "auto") {
     return "If the user did not specify an aspect ratio, avoid inventing a conflicting hard-coded ratio in finalPrompt or summary.composition.";
   }
 
   return [
-    `The required image aspect ratio is ${aspectRatio}.`,
-    `The finalPrompt and summary.composition must match ${aspectRatio}.`,
-    `Do not mention any conflicting aspect ratio such as 2:5, 9:16, 16:9, 4:3, 3:4, 3:2, or 2:3 unless it is exactly ${aspectRatio}.`
+    `The required image aspect ratio is ${displayAspectRatio}.`,
+    `The finalPrompt and summary.composition must match ${displayAspectRatio}.`,
+    `Do not mention any conflicting aspect ratio such as 2:5, 9:16, 16:9, 4:3, 3:4, 3:2, or 2:3 unless it is exactly ${displayAspectRatio}.`
   ].join("\n");
 }
 
@@ -45,6 +48,10 @@ function buildSharedContractInstructions({ outputLanguage, targetType, aspectRat
     `Treat the style tags as a combined aesthetic brief: ${selectedStyleHints}.`,
     `Selected camera orientation: ${getResolvedCameraOrientationLabel(targetType)}.`,
     `Camera orientation guidance: ${getResolvedCameraOrientationPromptHint(targetType)}.`,
+    "Preserve the user's explicit main subject from the source prompt and reference images.",
+    "If the source prompt does not explicitly mention one, do not invent a human, character, traveler, creature, portrait, body, or silhouette as a new main subject.",
+    "Manual character or figure camera orientations count as explicit composition instructions; auto camera mode does not.",
+    "For scale in non-character prompts, prefer environmental anchors such as ruins, cliffs, architecture, celestial bodies, waves, gates, light beams, or spatial boundaries.",
     `Use ${describeLanguage(outputLanguage)} for all user-visible fields.`,
     buildAspectRatioInstructions(aspectRatio),
     "Return JSON only.",

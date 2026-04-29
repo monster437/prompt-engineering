@@ -38,7 +38,7 @@ const { findManyMock, updateMock } = vi.hoisted(() => ({
     selectedTextConfig: null,
     selectedTargetType: "general",
     selectedImageConfig: "cfg_image_1",
-    selectedImageAspectRatio: "9:16",
+    selectedImageAspectRatio: "9:16@1024x1792",
     selectedImageModel: null,
     sourcePrompt: "",
     sourcePromptImages: "[]",
@@ -65,7 +65,7 @@ vi.mock("@/lib/db", () => ({
 
 import { GET } from "@/app/api/workspaces/route";
 import { PATCH } from "@/app/api/workspaces/[id]/route";
-import { createEmptyWorkspace, toWorkspaceUpdateData } from "@/lib/workspaces";
+import { createEmptyWorkspace, toWorkspaceDto, toWorkspaceUpdateData } from "@/lib/workspaces";
 
 describe("createEmptyWorkspace", () => {
   it("creates the default optimize workspace state", () => {
@@ -187,6 +187,7 @@ describe("workspace mapping", () => {
       extras: []
     });
     expect(json[0].sourcePromptImages).toEqual([]);
+    expect(json[0].selectedImageAspectRatio).toBe("9:16@1024x1792");
     expect(json[0].generatedImageResult).toEqual({
       images: [{ url: "https://example.com/generated.png" }],
       revisedPrompt: "海边少女，电影感",
@@ -195,7 +196,7 @@ describe("workspace mapping", () => {
       promptEnhancementError: null,
       selectedImageConfig: "cfg_image_1",
       selectedImageModel: "gpt-image-1",
-      selectedImageAspectRatio: "9:16"
+      selectedImageAspectRatio: "9:16@1024x1792"
     });
   });
 
@@ -203,7 +204,7 @@ describe("workspace mapping", () => {
     expect(
       toWorkspaceUpdateData({
         selectedImageConfig: "cfg_image_1",
-        selectedImageAspectRatio: "9:16",
+        selectedImageAspectRatio: "9:16@1024x1792",
         generatedImageResult: {
           images: [{ url: "https://example.com/generated.png" }],
           revisedPrompt: "cinematic beach",
@@ -212,12 +213,12 @@ describe("workspace mapping", () => {
           promptEnhancementError: null,
           selectedImageConfig: "cfg_image_1",
           selectedImageModel: "gpt-image-1",
-          selectedImageAspectRatio: "9:16"
+          selectedImageAspectRatio: "9:16@1024x1792"
         }
       })
     ).toEqual({
       selectedImageConfig: "cfg_image_1",
-      selectedImageAspectRatio: "9:16",
+      selectedImageAspectRatio: "9:16@1024x1792",
       generatedImageResult: JSON.stringify({
         images: [{ url: "https://example.com/generated.png" }],
         revisedPrompt: "cinematic beach",
@@ -226,9 +227,59 @@ describe("workspace mapping", () => {
         promptEnhancementError: null,
         selectedImageConfig: "cfg_image_1",
         selectedImageModel: "gpt-image-1",
-        selectedImageAspectRatio: "9:16"
+        selectedImageAspectRatio: "9:16@1024x1792"
       })
     });
+  });
+
+  it("normalizes legacy stored aspect ratios when mapping to workspace dto", () => {
+    expect(toWorkspaceDto({
+      id: "ws_legacy",
+      title: "旧工作台",
+      mode: "OPTIMIZE",
+      outputLanguage: "ZH",
+      selectedTextModel: null,
+      selectedTextConfig: null,
+      selectedTargetType: "general",
+      selectedImageConfig: "cfg_image_1",
+      selectedImageAspectRatio: "16:9",
+      selectedImageModel: "gpt-image-1",
+      sourcePrompt: "",
+      sourcePromptImages: "[]",
+      questionMessages: "[]",
+      answers: "[]",
+      finalPrompt: null,
+      parameterSummary: null,
+      refineInstruction: null,
+      generatedImageResult: null,
+      status: "IDLE",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as any).selectedImageAspectRatio).toBe("16:9@1792x1024");
+
+    expect(toWorkspaceDto({
+      id: "ws_unsupported",
+      title: "旧工作台 2",
+      mode: "OPTIMIZE",
+      outputLanguage: "ZH",
+      selectedTextModel: null,
+      selectedTextConfig: null,
+      selectedTargetType: "general",
+      selectedImageConfig: "cfg_image_1",
+      selectedImageAspectRatio: "3:2",
+      selectedImageModel: "gpt-image-1",
+      sourcePrompt: "",
+      sourcePromptImages: "[]",
+      questionMessages: "[]",
+      answers: "[]",
+      finalPrompt: null,
+      parameterSummary: null,
+      refineInstruction: null,
+      generatedImageResult: null,
+      status: "IDLE",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as any).selectedImageAspectRatio).toBe("3:2");
   });
 
   it("returns patched workspace dto shape", async () => {
@@ -239,7 +290,7 @@ describe("workspace mapping", () => {
           mode: "interview",
           outputLanguage: "en",
           selectedImageConfig: "cfg_image_1",
-          selectedImageAspectRatio: "9:16",
+          selectedImageAspectRatio: "16:9@1280x720",
           questionMessages: ["风格是什么？"],
           answers: ["电影感"],
           status: "asking"
@@ -256,7 +307,7 @@ describe("workspace mapping", () => {
       mode: "interview",
       outputLanguage: "en",
       selectedImageConfig: "cfg_image_1",
-      selectedImageAspectRatio: "9:16",
+      selectedImageAspectRatio: "9:16@1024x1792",
       questionMessages: ["风格是什么？"],
       answers: ["电影感"],
       status: "asking"
@@ -267,7 +318,7 @@ describe("workspace mapping", () => {
         mode: WorkspaceMode.INTERVIEW,
         outputLanguage: OutputLanguage.EN,
         selectedImageConfig: "cfg_image_1",
-        selectedImageAspectRatio: "9:16",
+        selectedImageAspectRatio: "16:9@1280x720",
         questionMessages: JSON.stringify(["风格是什么？"]),
         answers: JSON.stringify(["电影感"]),
         status: WorkspaceStatus.ASKING

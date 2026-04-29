@@ -55,6 +55,20 @@ function setWorkspacePending(
   });
 }
 
+export function mergeWorkspaceAfterSyncResponse({
+  currentWorkspace,
+  savedWorkspace,
+  latestRequestId,
+  responseRequestId
+}: {
+  currentWorkspace: WorkspaceDto;
+  savedWorkspace: WorkspaceDto;
+  latestRequestId: number;
+  responseRequestId: number;
+}) {
+  return responseRequestId === latestRequestId ? savedWorkspace : currentWorkspace;
+}
+
 export function WorkbenchPage() {
   const [workspaces, setWorkspaces] = useState<WorkspaceDto[]>([]);
   const [modelOptions, setModelOptions] = useState<ModelOptionDto[]>([]);
@@ -75,6 +89,7 @@ export function WorkbenchPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const promptControllersRef = useRef<Record<string, AbortController>>({});
   const imageControllersRef = useRef<Record<string, AbortController>>({});
+  const workspaceSyncRequestIdsRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     async function loadInitialData() {
@@ -241,9 +256,22 @@ export function WorkbenchPage() {
   }
 
   async function syncWorkspace(next: WorkspaceDto) {
+    const requestId = (workspaceSyncRequestIdsRef.current[next.id] ?? 0) + 1;
+    workspaceSyncRequestIdsRef.current[next.id] = requestId;
     setWorkspaces((current) => current.map((workspace) => (workspace.id === next.id ? next : workspace)));
     const saved = await updateWorkspace(next.id, next);
-    setWorkspaces((current) => current.map((workspace) => (workspace.id === saved.id ? saved : workspace)));
+    setWorkspaces((current) =>
+      current.map((workspace) =>
+        workspace.id === saved.id
+          ? mergeWorkspaceAfterSyncResponse({
+              currentWorkspace: workspace,
+              savedWorkspace: saved,
+              latestRequestId: workspaceSyncRequestIdsRef.current[saved.id] ?? requestId,
+              responseRequestId: requestId
+            })
+          : workspace
+      )
+    );
   }
 
   async function handleCreateWorkspace() {

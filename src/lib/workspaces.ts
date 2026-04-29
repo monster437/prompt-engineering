@@ -1,5 +1,6 @@
 import { OutputLanguage, Workspace, WorkspaceMode, WorkspaceStatus } from "@prisma/client";
 import { db } from "@/lib/db";
+import { normalizeStoredImageAspectRatio } from "@/lib/image-generation/catalog";
 import {
   IMAGE_ASPECT_RATIOS,
   GenerateImageResult,
@@ -32,7 +33,7 @@ export function toWorkspaceDto(workspace: Workspace) {
     selectedTextConfig: workspace.selectedTextConfig,
     selectedTargetType: workspace.selectedTargetType,
     selectedImageConfig: workspace.selectedImageConfig,
-    selectedImageAspectRatio: workspace.selectedImageAspectRatio,
+    selectedImageAspectRatio: normalizeStoredImageAspectRatio(workspace.selectedImageAspectRatio),
     selectedImageModel: workspace.selectedImageModel,
     sourcePrompt: workspace.sourcePrompt,
     sourcePromptImages: parseSourcePromptImages(workspace.sourcePromptImages),
@@ -142,7 +143,22 @@ function parseGeneratedImageResult(value: string | null) {
 
   try {
     const parsed = JSON.parse(value) as unknown;
-    return isGenerateImageResult(parsed) ? parsed : null;
+
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    const result = parsed as Record<string, unknown>;
+    const normalizedResult = {
+      ...result,
+      ...(typeof result.selectedImageAspectRatio === "string"
+        ? {
+            selectedImageAspectRatio: normalizeStoredImageAspectRatio(result.selectedImageAspectRatio)
+          }
+        : {})
+    };
+
+    return isGenerateImageResult(normalizedResult) ? normalizedResult : null;
   } catch {
     return null;
   }

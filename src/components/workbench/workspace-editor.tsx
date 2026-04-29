@@ -17,6 +17,7 @@ import {
   splitImageFiles,
   toSourcePromptImage
 } from "@/lib/source-prompt-images";
+import { getImageAspectRatioLabel } from "@/lib/image-generation/catalog";
 import {
   getAutoCameraOrientationUiHint,
   CAMERA_ORIENTATION_OPTIONS,
@@ -423,7 +424,7 @@ export function WorkspaceEditor({
           >
             {IMAGE_ASPECT_RATIOS.map((aspectRatio) => (
               <option key={aspectRatio} value={aspectRatio}>
-                {aspectRatio === "auto" ? "auto（自动）" : aspectRatio}
+                {getImageAspectRatioLabel(aspectRatio)}
               </option>
             ))}
           </select>

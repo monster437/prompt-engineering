@@ -3,7 +3,18 @@ export type WorkspaceMode = "interview" | "optimize";
 export type OutputLanguage = "zh" | "en";
 export type WorkspaceStatus = "idle" | "asking" | "generating" | "refining" | "error";
 export type ReverseWorkspaceStatus = "idle" | "generating" | "completed" | "error";
-export const IMAGE_ASPECT_RATIOS = ["auto", "16:9", "9:16", "2:3", "3:2", "4:3", "3:4", "1:1"] as const;
+export const IMAGE_ASPECT_RATIOS = [
+  "auto",
+  "16:9@1792x1024",
+  "16:9@1280x720",
+  "9:16@1024x1792",
+  "9:16@720x1280",
+  "2:3",
+  "3:2",
+  "4:3",
+  "3:4",
+  "1:1@1024x1024"
+] as const;
 export type ImageAspectRatio = (typeof IMAGE_ASPECT_RATIOS)[number];
 export const MAX_SOURCE_PROMPT_IMAGES = 4;
 export const MAX_SOURCE_PROMPT_IMAGE_SIZE_BYTES = 4 * 1024 * 1024;

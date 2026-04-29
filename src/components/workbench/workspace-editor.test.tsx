@@ -97,6 +97,15 @@ describe("WorkspaceEditor", () => {
     expect(output).toContain("输出语言");
     expect(output).toContain("题材标签");
     expect(output).toContain("镜头朝向");
+    expect(output).toContain("16:9（1792x1024）");
+    expect(output).toContain("16:9（1280x720）");
+    expect(output).toContain("9:16（1024x1792）");
+    expect(output).toContain("9:16（720x1280）");
+    expect(output).toContain("2:3");
+    expect(output).toContain("3:2");
+    expect(output).toContain("4:3");
+    expect(output).toContain("3:4");
+    expect(output).toContain("1:1（1024x1024）");
     expect(output).toContain("原始提示词");
     expect(output).toContain("上传参考图");
     expect(output).toContain("Ctrl+V");
@@ -200,15 +209,17 @@ describe("WorkspaceEditor", () => {
     const generateButton = actionButtons[0];
     const refineButton = actionButtons[actionButtons.length - 1];
     const styleTagGroups = styleTagSection.props.children[1].props.children.props.children[1].props.children as React.ReactElement<any>[];
-    const firstGenreGroup = styleTagGroups[0];
-    const xianxiaButton = firstGenreGroup.props.children[1].props.children[1];
+    const styleTagButtons = styleTagGroups.flatMap(
+      (group) => React.Children.toArray(group.props.children[1].props.children) as React.ReactElement<any>[]
+    );
+    const xianxiaButton = styleTagButtons.find((button) => button.props.children === "玄幻修仙");
 
     modeSelect.props.onChange({ target: { value: "optimize" } });
-    xianxiaButton.props.onClick();
+    xianxiaButton?.props.onClick();
     cameraOrientationSelect.props.onChange({ target: { value: "back" } });
     textModelSelect.props.onChange({ target: { value: "cfg_text_1::gpt-4.1" } });
     imageModelSelect.props.onChange({ target: { value: "cfg_image_1::flux-dev" } });
-    imageAspectRatioSelect.props.onChange({ target: { value: "9:16" } });
+    imageAspectRatioSelect.props.onChange({ target: { value: "9:16@1024x1792" } });
     generateButton.props.onClick();
     refineButton.props.onClick();
 
@@ -228,7 +239,7 @@ describe("WorkspaceEditor", () => {
       selectedImageModel: "flux-dev"
     });
     expect(onPatchWorkspace).toHaveBeenCalledWith({
-      selectedImageAspectRatio: "9:16"
+      selectedImageAspectRatio: "9:16@1024x1792"
     });
     expect(onGeneratePrompt).toHaveBeenCalledTimes(1);
     expect(onStopGeneratePrompt).not.toHaveBeenCalled();
@@ -276,9 +287,9 @@ describe("WorkspaceEditor", () => {
 
     const output = JSON.stringify(html);
 
-    expect(output).toContain("当前 auto 倾向");
-    expect(output).toContain("远景小人物");
-    expect(output).toContain("背影");
+    expect(output).toContain("当前 auto 倾向：环境远景 / 低机位 / 俯瞰");
+    expect(output).toContain("环境远景");
+    expect(output).toContain("低机位");
   });
 
   it("shows and wires a stop button while prompt generation is running", () => {

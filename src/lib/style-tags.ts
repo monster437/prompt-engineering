@@ -3,7 +3,18 @@ export type StyleTagGroup = {
   label: string;
 };
 
-export type CameraOrientation = "auto" | "front" | "three-quarter" | "side" | "back" | "over-shoulder" | "distant";
+export type CameraOrientation =
+  | "auto"
+  | "environment-wide"
+  | "low-angle"
+  | "overhead"
+  | "symmetric"
+  | "front"
+  | "three-quarter"
+  | "side"
+  | "back"
+  | "over-shoulder"
+  | "distant";
 
 export type StyleTagOption = {
   id: string;
@@ -36,7 +47,31 @@ export const CAMERA_ORIENTATION_OPTIONS: CameraOrientationOption[] = [
     value: "auto",
     label: "auto（AI判断）",
     promptHint:
-      "auto-select the most effective subject orientation and shot direction for the scene instead of defaulting to a frontal hero poster"
+      "auto-select a subject-led composition from the source prompt instead of defaulting to a character, figure, or frontal hero poster"
+  },
+  {
+    value: "environment-wide",
+    label: "环境远景",
+    promptHint:
+      "favor an environment-wide composition focused on place, scale, atmosphere, and spatial layers without adding characters unless explicitly requested"
+  },
+  {
+    value: "low-angle",
+    label: "低机位",
+    promptHint:
+      "favor a low-angle monumental viewpoint that makes the environment, object, gate, horizon, or boundary feel vast and imposing"
+  },
+  {
+    value: "overhead",
+    label: "俯瞰",
+    promptHint:
+      "favor a high-angle or overhead environmental viewpoint that reveals geography, boundaries, patterns, and scale"
+  },
+  {
+    value: "symmetric",
+    label: "中心对称",
+    promptHint:
+      "favor a centered symmetric composition around the main scene, object, gate, monument, horizon, or spatial boundary"
   },
   {
     value: "front",
@@ -71,6 +106,7 @@ export const CAMERA_ORIENTATION_OPTIONS: CameraOrientationOption[] = [
 ];
 
 export const STYLE_TAG_GROUPS: StyleTagGroup[] = [
+  { id: "short-drama", label: "短剧热门" },
   { id: "genre", label: "题材叙事" },
   { id: "cinematic", label: "镜头与氛围" },
   { id: "anime", label: "动漫与网络热门" },
@@ -83,6 +119,114 @@ export const POPULAR_STYLE_TAGS: StyleTagOption[] = [
     label: "通用",
     group: "genre",
     promptHint: "general high-quality image generation with no single strong genre bias"
+  },
+  {
+    id: "ceo-romance",
+    label: "豪门霸总",
+    group: "short-drama",
+    promptHint: "vertical short drama billionaire CEO romance, luxury office, mansion interiors, sharp suits, status tension"
+  },
+  {
+    id: "counterattack",
+    label: "逆袭爽剧",
+    group: "short-drama",
+    promptHint: "vertical short drama underdog counterattack, humiliation reversal, triumphant reveal, high-emotion confrontation"
+  },
+  {
+    id: "contract-marriage",
+    label: "先婚后爱",
+    group: "short-drama",
+    promptHint: "contract marriage romance, wedding certificate, restrained intimacy, wealthy family pressure, slow-burn chemistry"
+  },
+  {
+    id: "second-chance-romance",
+    label: "破镜重圆",
+    group: "short-drama",
+    promptHint: "second-chance romance, reunion after separation, restrained longing, rain-night encounter, emotional close-ups"
+  },
+  {
+    id: "cute-baby",
+    label: "萌宝团宠",
+    group: "short-drama",
+    promptHint: "cute baby and family-pampering short drama, warm mansion or home scenes, playful child focus, soft family comedy"
+  },
+  {
+    id: "rebirth-revenge",
+    label: "重生复仇",
+    group: "short-drama",
+    promptHint: "rebirth revenge comeback, cold gaze, elegant retaliation, fate reversal, dramatic before-and-after contrast"
+  },
+  {
+    id: "female-growth",
+    label: "大女主成长",
+    group: "short-drama",
+    promptHint: "strong female lead growth, career rise, self-rescue, polished urban confidence, decisive emotional turning point"
+  },
+  {
+    id: "workplace-marriage",
+    label: "职场婚恋",
+    group: "short-drama",
+    promptHint: "workplace marriage romance, boardroom tension, office glass walls, professional styling, intimate power dynamics"
+  },
+  {
+    id: "family-power",
+    label: "家族权斗",
+    group: "short-drama",
+    promptHint: "vertical short drama family power struggle, banquet hall, inheritance conflict, patriarchal mansion, tense ensemble staging"
+  },
+  {
+    id: "period-warmth",
+    label: "年代温情",
+    group: "short-drama",
+    promptHint: "nostalgic period-life short drama, warm family courtyard, textured old streets, humble clothing, emotional everyday realism"
+  },
+  {
+    id: "republic-intrigue",
+    label: "民国权谋",
+    group: "short-drama",
+    promptHint: "Republic-era intrigue, qipao and suits, smoky mansion, newspaper office, political suspense, vintage Chinese elegance"
+  },
+  {
+    id: "crime-investigation",
+    label: "刑侦悬疑",
+    group: "short-drama",
+    promptHint: "crime investigation suspense, police lights, evidence board, rainy alley, tense procedural mood, sharp clue details"
+  },
+  {
+    id: "legal-elite",
+    label: "律政精英",
+    group: "short-drama",
+    promptHint: "legal elite drama, courtroom confrontation, law office, documents and evidence, crisp suits, rational high-stakes tension"
+  },
+  {
+    id: "war-god-return",
+    label: "战神归来",
+    group: "short-drama",
+    promptHint: "urban war-god return short drama, hidden identity reveal, black coat, guards, night city, intimidating heroic entrance"
+  },
+  {
+    id: "son-in-law-counterattack",
+    label: "赘婿逆袭",
+    group: "short-drama",
+    promptHint: "matrilocal son-in-law counterattack, family humiliation, sudden status reveal, luxury car arrival, satisfying reversal"
+  },
+  {
+    id: "miracle-doctor",
+    label: "神医下山",
+    group: "short-drama",
+    promptHint: "miracle doctor from mountain to city, acupuncture, herbal medicine, hidden master identity, modern clinic confrontation"
+  },
+  {
+    id: "transmigration-rebirth",
+    label: "穿越重生",
+    group: "short-drama",
+    promptHint: "transmigration or rebirth setup, time-shift contrast, ancient-modern collision, destiny rewrite, dramatic awakening"
+  },
+  {
+    id: "system-fantasy",
+    label: "系统脑洞",
+    group: "short-drama",
+    promptHint: "system-powered fantasy premise, translucent UI overlays, mission panels, comedic absurdity, reality-bending shortcut"
   },
   {
     id: "xianxia",
@@ -336,6 +480,10 @@ const STYLE_TAG_MAP = new Map(POPULAR_STYLE_TAGS.map((tag) => [tag.id, tag] as c
 const CAMERA_ORIENTATION_MAP = new Map(CAMERA_ORIENTATION_OPTIONS.map((option) => [option.value, option] as const));
 const CAMERA_ORIENTATION_ENGLISH_LABELS: Record<CameraOrientation, string> = {
   auto: "auto",
+  "environment-wide": "environment-wide composition",
+  "low-angle": "low-angle monumental viewpoint",
+  overhead: "overhead environmental viewpoint",
+  symmetric: "centered symmetric composition",
   front: "frontal view",
   "three-quarter": "three-quarter view",
   side: "side view",
@@ -347,10 +495,25 @@ const CAMERA_ORIENTATION_ENGLISH_LABELS: Record<CameraOrientation, string> = {
 const AUTO_ORIENTATION_RULES: AutoOrientationRule[] = [
   {
     tags: ["scene-narrative", "xianxia", "chinese-myth", "dark-epic", "fantasy-adventure", "post-apocalypse"],
-    orientations: { back: 4, distant: 5, "over-shoulder": 2, side: 1 }
+    orientations: { "environment-wide": 5, "low-angle": 4, overhead: 3, symmetric: 2 }
   },
   {
-    tags: ["cute-romance", "urban-romance", "ancient-romance", "campus-youth", "soft-romance-light", "shoujo-manga", "healing-daily", "dream-fairytale"],
+    tags: [
+      "cute-romance",
+      "urban-romance",
+      "ancient-romance",
+      "campus-youth",
+      "soft-romance-light",
+      "shoujo-manga",
+      "healing-daily",
+      "dream-fairytale",
+      "ceo-romance",
+      "contract-marriage",
+      "second-chance-romance",
+      "cute-baby",
+      "workplace-marriage",
+      "legal-elite"
+    ],
     orientations: { "three-quarter": 5, "over-shoulder": 4, side: 2, front: 1 }
   },
   {
@@ -358,12 +521,16 @@ const AUTO_ORIENTATION_RULES: AutoOrientationRule[] = [
     orientations: { front: 5, "three-quarter": 4, side: 1 }
   },
   {
-    tags: ["eastern-weird", "suspense-horror", "dreamy-surreal", "silhouette-shadow", "vhs-glitch"],
-    orientations: { side: 4, "over-shoulder": 4, back: 3, distant: 1 }
+    tags: ["eastern-weird", "suspense-horror", "dreamy-surreal", "silhouette-shadow", "vhs-glitch", "crime-investigation"],
+    orientations: { "low-angle": 4, symmetric: 3, "environment-wide": 3, overhead: 1 }
   },
   {
-    tags: ["wuxia", "cyberpunk", "retro-futurism"],
+    tags: ["wuxia", "cyberpunk", "retro-futurism", "counterattack", "rebirth-revenge", "female-growth", "war-god-return", "son-in-law-counterattack", "miracle-doctor"],
     orientations: { side: 4, "three-quarter": 3, back: 2 }
+  },
+  {
+    tags: ["family-power", "period-warmth", "republic-intrigue", "transmigration-rebirth", "system-fantasy"],
+    orientations: { "environment-wide": 3, symmetric: 3, "three-quarter": 2, "low-angle": 2 }
   },
   {
     tags: ["anime-clean", "pastel-kawaii", "chibi", "cozy-pastel", "healing-animation"],
@@ -371,11 +538,15 @@ const AUTO_ORIENTATION_RULES: AutoOrientationRule[] = [
   },
   {
     tags: ["ink-wash", "ukiyo-e", "minimal-line-art", "mixed-media-collage", "textured-handdrawn", "watercolor-storybook", "oil-painting"],
-    orientations: { side: 3, back: 3, distant: 2, "three-quarter": 1 }
+    orientations: { "environment-wide": 3, symmetric: 3, overhead: 2, "low-angle": 1 }
   }
 ];
 
 const CAMERA_ORIENTATION_SORT_ORDER: CameraOrientation[] = [
+  "environment-wide",
+  "low-angle",
+  "overhead",
+  "symmetric",
   "distant",
   "back",
   "over-shoulder",
@@ -399,14 +570,11 @@ function isCameraOrientation(value: unknown): value is CameraOrientation {
 }
 
 function scoreAutoCameraOrientations(styleTags: string[]) {
-  const scores = new Map<CameraOrientation, number>([
-    ["front", 0],
-    ["three-quarter", 0],
-    ["side", 0],
-    ["back", 0],
-    ["over-shoulder", 0],
-    ["distant", 0]
-  ]);
+  const scores = new Map<CameraOrientation, number>(
+    CAMERA_ORIENTATION_OPTIONS
+      .filter((option) => option.value !== "auto")
+      .map((option) => [option.value, 0] as [CameraOrientation, number])
+  );
   const tagSet = new Set(styleTags);
 
   for (const rule of AUTO_ORIENTATION_RULES) {
@@ -421,16 +589,10 @@ function scoreAutoCameraOrientations(styleTags: string[]) {
     }
   }
 
-  if ((scores.get("front") ?? 0) === 0) {
-    scores.set("front", 1);
-  }
-
-  if ((scores.get("three-quarter") ?? 0) === 0) {
-    scores.set("three-quarter", 2);
-  }
-
-  if ((scores.get("back") ?? 0) === 0) {
-    scores.set("back", 1);
+  if (Array.from(scores.values()).every((score) => score === 0)) {
+    scores.set("environment-wide", 2);
+    scores.set("symmetric", 1);
+    scores.set("low-angle", 1);
   }
 
   return scores;
@@ -591,9 +753,9 @@ export function getResolvedCameraOrientationPromptHint(value: string | null | un
     .map((orientation) => CAMERA_ORIENTATION_ENGLISH_LABELS[orientation]);
 
   return [
-    "auto mode: choose the most effective orientation for the dramatic beat instead of defaulting to a frontal hero poster.",
+    "auto mode: choose a subject-led composition for the dramatic beat instead of defaulting to a character, figure, or frontal hero poster.",
     `Current preference order based on the selected style tags: ${preferredOrientations.join(", ")}.`,
-    "Use frontal views only when direct face readability is truly the best storytelling choice."
+    "Preserve the source prompt's main subject; when no person or creature is explicit, use environmental scale anchors instead of adding a distant figure, traveler, silhouette, portrait, or body."
   ].join(" ");
 }
 

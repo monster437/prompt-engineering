@@ -105,7 +105,7 @@ describe("runGenerateImage", () => {
         workspaceId: "ws_1",
         selectedConfigId: "cfg_image",
         selectedImageModel: "gpt-image-1",
-        selectedImageAspectRatio: "9:16",
+        selectedImageAspectRatio: "9:16@1024x1792",
         prompt: "前端传入但最终以后端 workspace.finalPrompt 为准"
       })
     ).resolves.toEqual({
@@ -115,7 +115,7 @@ describe("runGenerateImage", () => {
       promptEnhancementError: null,
       selectedImageConfig: "cfg_image",
       selectedImageModel: "gpt-image-1",
-      selectedImageAspectRatio: "9:16"
+      selectedImageAspectRatio: "9:16@1024x1792"
     });
 
     expect(callOpenAiCompatibleImageProviderMock).toHaveBeenCalledWith({
@@ -123,7 +123,7 @@ describe("runGenerateImage", () => {
       baseURL: "https://example.com",
       apiKey: "sk-test",
       model: "gpt-image-1",
-      aspectRatio: "9:16",
+      aspectRatio: "9:16@1024x1792",
       prompt: "电影感雨夜街景"
     });
 
@@ -131,7 +131,7 @@ describe("runGenerateImage", () => {
       where: { id: "ws_1" },
       data: {
         selectedImageConfig: "cfg_image",
-        selectedImageAspectRatio: "9:16",
+        selectedImageAspectRatio: "9:16@1024x1792",
         selectedImageModel: "gpt-image-1",
         generatedImageResult: JSON.stringify({
           ...providerResult,
@@ -140,7 +140,7 @@ describe("runGenerateImage", () => {
           promptEnhancementError: null,
           selectedImageConfig: "cfg_image",
           selectedImageModel: "gpt-image-1",
-          selectedImageAspectRatio: "9:16"
+          selectedImageAspectRatio: "9:16@1024x1792"
         })
       }
     });
@@ -173,7 +173,7 @@ describe("runGenerateImage", () => {
         workspaceId: "ws_1",
         selectedConfigId: "cfg_image",
         selectedImageModel: "gpt-image-1",
-        selectedImageAspectRatio: "16:9",
+        selectedImageAspectRatio: "16:9@1280x720",
         prompt: "ignored"
       })
     ).resolves.toEqual({
@@ -183,7 +183,7 @@ describe("runGenerateImage", () => {
       promptEnhancementError: null,
       selectedImageConfig: "cfg_image",
       selectedImageModel: "gpt-image-1",
-      selectedImageAspectRatio: "16:9"
+      selectedImageAspectRatio: "16:9@1280x720"
     });
 
     expect(callOpenAiCompatibleImageProviderMock).toHaveBeenCalledWith(
@@ -209,7 +209,7 @@ describe("runGenerateImage", () => {
         workspaceId: "ws_1",
         selectedConfigId: "cfg_text",
         selectedImageModel: "gpt-image-1",
-        selectedImageAspectRatio: "9:16",
+        selectedImageAspectRatio: "9:16@1024x1792",
         prompt: "test"
       })
     ).rejects.toThrow(/image config/i);
@@ -234,7 +234,7 @@ describe("runGenerateImage", () => {
         workspaceId: "ws_1",
         selectedConfigId: "cfg_image",
         selectedImageModel: "gpt-image-1",
-        selectedImageAspectRatio: "9:16",
+        selectedImageAspectRatio: "9:16@1024x1792",
         prompt: "test"
       })
     ).rejects.toThrow(/final prompt/i);

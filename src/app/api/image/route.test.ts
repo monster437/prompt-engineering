@@ -47,7 +47,7 @@ describe("POST /api/image/generate", () => {
         workspaceId: "ws_1",
         selectedConfigId: "cfg_image_1",
         selectedImageModel: "gpt-image-1",
-        selectedImageAspectRatio: "9:16",
+        selectedImageAspectRatio: "9:16@1024x1792",
         prompt: "A rainy neon street"
       })
     });
@@ -65,7 +65,7 @@ describe("POST /api/image/generate", () => {
         workspaceId: "ws_1",
         selectedConfigId: "cfg_image_1",
         selectedImageModel: "gpt-image-1",
-        selectedImageAspectRatio: "9:16",
+        selectedImageAspectRatio: "9:16@1024x1792",
         prompt: "A rainy neon street"
       },
       { signal: request.signal }
@@ -80,7 +80,7 @@ describe("POST /api/image/generate", () => {
         workspaceId: "ws_1",
         selectedConfigId: "cfg_image_1",
         selectedImageModel: "gpt-image-1",
-        selectedImageAspectRatio: "9:16",
+        selectedImageAspectRatio: "9:16@1024x1792",
         prompt: "A rainy neon street"
       })
     });

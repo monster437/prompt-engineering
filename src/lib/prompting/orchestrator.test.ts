@@ -63,7 +63,7 @@ describe("runPromptOrchestration", () => {
         mode: "optimize",
         outputLanguage: "zh",
         selectedTargetType: '{"styleTags":["xianxia"],"cameraOrientation":"back"}',
-        selectedImageAspectRatio: "16:9",
+        selectedImageAspectRatio: "16:9@1280x720",
         sourcePrompt: "一个女孩站在海边",
         sourcePromptImages: [],
         questionMessages: [],
@@ -89,6 +89,10 @@ describe("runPromptOrchestration", () => {
         })
       })
     );
+
+    const messages = (callProviderMock.mock.calls[0][0].payload as { messages: ProviderMessage[] }).messages;
+    const userMessageText = typeof messages[1].content === "string" ? messages[1].content : messages[1].content[0]?.text ?? "";
+    expect(userMessageText).not.toContain("16:9@1280x720");
   });
 
   it("includes uploaded reference images in the user message content", async () => {
@@ -232,7 +236,7 @@ describe("runPromptOrchestration", () => {
           mode: "optimize",
           outputLanguage: "zh",
           selectedTargetType: "general",
-          selectedImageAspectRatio: "16:9",
+          selectedImageAspectRatio: "16:9@1792x1024",
           sourcePrompt: "一个女孩站在海边",
           sourcePromptImages: [],
           questionMessages: [],
